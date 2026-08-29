@@ -121,21 +121,21 @@
 
                 <!-- ЗУРГААС ТЕКСТ УНШИХ/СКАЙНДАХ ХЭСЭГ -->
                 <div class="scan-box">
-                    <label style="font-weight:bold; color:#15803d; font-size:13px;">📷 Зурагнаас текст сканнердах / Уншуулах:</label>
+                    <label style="font-weight:bold; color:#15803d; font-size:13px;">📷 Номноос Текст Сканнердах (Зөвхөн текст уншина):</label>
                     <div style="display:flex; gap:8px; margin-top:6px;">
                         <label class="btn btn-scan" style="flex:1; margin:0; cursor:pointer;">
                             📷 Камераар зураг авах
                             <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="processImageOCR(this)">
                         </label>
                         <label class="btn btn-scan" style="flex:1; margin:0; cursor:pointer;">
-                            🖼️ Галерейгаас оруулж уншуулах
+                            🖼️ Галерейгаас уншуулах
                             <input type="file" accept="image/*" style="display:none;" onchange="processImageOCR(this)">
                         </label>
                     </div>
                     <div id="ocr-status"></div>
                 </div>
 
-                <label>Зургийн линк (URL эсвэл Сканнердсан зураг):</label>
+                <label>Үндсэн зургийн линк (URL / Заавал биш):</label>
                 <input type="text" id="add-img-url" placeholder="https://example.com/image.jpg">
 
                 <label>Онолын агуулга (Текст):</label>
@@ -205,18 +205,13 @@
         alert("🎉 Бүх өөрчлөлт хадгалагдлаа!");
     }
 
+    // ЗУРГААС ЗӨВХӨН ТЕКСТ УНШИХ (Зургийг нь оруулахгүй)
     async function processImageOCR(input) {
         if (!input.files || !input.files[0]) return;
         const file = input.files[0];
 
         const statusDiv = document.getElementById('ocr-status');
         statusDiv.innerText = "⏳ Зургийг уншиж байна, түр хүлээнэ үү...";
-
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            document.getElementById('add-img-url').value = e.target.result;
-        };
-        reader.readAsDataURL(file);
 
         try {
             const result = await Tesseract.recognize(file, 'mon+eng', {
@@ -590,25 +585,21 @@
         document.getElementById('topic-list-view').classList.remove('hidden');
     }
 
-    // --- ШИНЭЧИЛСЭН СОРИЛЫН ХАРИУЛТ ХАРАХ ФУНКЦ ---
     function checkAnswer(qIdx, selected, correct) {
         const msg = document.getElementById(`q-res-${qIdx}`);
         const quizCard = document.getElementById(`quiz-card-${qIdx}`);
         const opts = quizCard.querySelectorAll('.quiz-opt');
 
-        // Бусад бүх сонголтын дардаг боломжийг хаах (lock хийх)
         opts.forEach(opt => opt.classList.add('disabled'));
 
         const selectedElem = document.getElementById(`opt-${qIdx}-${selected}`);
         const correctElem = document.getElementById(`opt-${qIdx}-${correct}`);
 
         if(selected === correct) {
-            // Зөв хариулсан тохиолдолд
             selectedElem.classList.add('opt-correct');
             msg.innerText = "✅ Зөв хариуллаа!";
             msg.style.color = "#16a34a";
         } else {
-            // Буруу хариулсан тохиолдолд: Дарсан нь улаан болох, Яг зөвийг нь ногоон хүрээгээр зааж өгөх
             selectedElem.classList.add('opt-wrong');
             if(correctElem) {
                 correctElem.classList.add('opt-highlight-correct');
