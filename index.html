@@ -47,6 +47,10 @@
 
         .scan-box { background: #f0fdf4; border: 1px dashed #16a34a; padding: 10px; border-radius: 8px; margin-bottom: 12px; text-align: center; }
         #ocr-status { font-size: 12px; color: #2563eb; font-weight: bold; margin-top: 5px; }
+        
+        /* ХАЙЛТЫН ИНПУТ СТАЙЛ */
+        .search-box { position: relative; margin-bottom: 15px; }
+        .search-input { width: 100%; padding: 12px 15px; border: 2px solid #2563eb; border-radius: 10px; font-size: 14px; outline: none; margin: 0; box-shadow: 0 2px 5px rgba(37,99,235,0.1); }
     </style>
 </head>
 <body>
@@ -61,6 +65,12 @@
     <div id="tab-learn">
         <div id="topic-list-view">
             <h3 style="margin-top:0;">Сургалтын бүлгүүд</h3>
+            
+            <!-- ТҮЛХҮҮР ҮГЭЭР ХАЙХ ХЭСЭГ -->
+            <div class="search-box">
+                <input type="text" id="search-input" class="search-input" placeholder="🔍 Түлхүүр үгээр хайх (онол, асуулт, бүлэг)..." oninput="renderTopicList()">
+            </div>
+
             <div id="topics-container"></div>
         </div>
 
@@ -205,7 +215,6 @@
         alert("🎉 Бүх өөрчлөлт хадгалагдлаа!");
     }
 
-    // ЗУРГААС ЗӨВХӨН ТЕКСТ УНШИХ (Зургийг нь оруулахгүй)
     async function processImageOCR(input) {
         if (!input.files || !input.files[0]) return;
         const file = input.files[0];
@@ -505,8 +514,12 @@
         optElements.forEach(o => o.value = '');
     }
 
+    // ТҮЛХҮҮР ҮГЭЭР ХАЙХ ШИНЭЧИЛСЭН РЕНДЕР ФУНКЦ
     function renderTopicList() {
         const container = document.getElementById('topics-container');
+        const searchInput = document.getElementById('search-input');
+        const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+        
         container.innerHTML = '';
 
         if(topicsData.length === 0) {
@@ -514,16 +527,50 @@
             return;
         }
 
+        let matchCount = 0;
+
         topicsData.forEach((t, idx) => {
-            const thCount = t.theories ? t.theories.length : 0;
-            const qCount = t.quizzes ? t.quizzes.length : 0;
-            container.innerHTML += `
-                <div class="topic-item" onclick="openTopic(${idx})">
-                    <h3 style="margin:0 0 5px 0; color:#1e293b;">${t.title}</h3>
-                    <span style="font-size:12px; color:#2563eb; font-weight:bold;">📖 ${thCount} онол | 🧠 ${qCount} сорил →</span>
-                </div>
-            `;
+            // Түлхүүр үг таарч байгаа эсэхийг шалгах
+            let isMatch = false;
+            
+            if(query === "") {
+                isMatch = true;
+            } else {
+                // Бүлгийн нэрнээс хайх
+                if(t.title.toLowerCase().includes(query)) isMatch = true;
+                
+                // Онолоос хайх
+                if(!isMatch && t.theories) {
+                    isMatch = t.theories.some(th => 
+                        (th.title && th.title.toLowerCase().includes(query)) || 
+                        (th.text && th.text.toLowerCase().includes(query))
+                    );
+                }
+                
+                // Сорилоос хайх
+                if(!isMatch && t.quizzes) {
+                    isMatch = t.quizzes.some(q => 
+                        q.question.toLowerCase().includes(query)
+                    );
+                }
+            }
+
+            if(isMatch) {
+                matchCount++;
+                const thCount = t.theories ? t.theories.length : 0;
+                const qCount = t.quizzes ? t.quizzes.length : 0;
+                container.innerHTML += `
+                    <div class="topic-item" onclick="openTopic(${idx})">
+                        <h3 style="margin:0 0 5px 0; color:#1e293b;">${t.title}</h3>
+                        <span style="font-size:12px; color:#2563eb; font-weight:bold;">📖 ${thCount} онол | 🧠 ${qCount} сорил →</span>
+                    </div>
+                `;
+            }
         });
+
+        if(matchCount === 0 && query !== "") {
+            container.innerHTML = '<p style="color:#666; text-align:center; padding: 20px 0;">🔍 Илэрц олдсонгүй.</p>';
+        }
     }
 
     function openTopic(idx) {
