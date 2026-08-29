@@ -11,40 +11,54 @@
         .nav-btns { display: flex; gap: 8px; margin-bottom: 20px; }
         .nav-btn { flex: 1; padding: 12px; border: none; background: #eef2f5; color: #555; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; }
         .nav-btn.active { background: #2563eb; color: white; }
+        
+        .topic-badge { background: #e0e7ff; color: #3730a3; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; display: inline-block; margin-bottom: 8px; }
         .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
         .btn { background: #2563eb; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 15px; }
-        .btn-danger { background: #dc2626; }
+        .btn-danger { background: #dc2626; padding: 6px 12px; font-size: 13px; }
         .btn-success { background: #16a34a; }
         input, textarea, select { width: 100%; padding: 10px; margin-top: 6px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
         .quiz-opt { background: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; margin-top: 8px; cursor: pointer; transition: background 0.2s; }
         .quiz-opt:active { background: #e2e8f0; }
         .hidden { display: none; }
+        .topic-header { background: #f1f5f9; padding: 10px; border-radius: 8px; margin-top: 15px; margin-bottom: 10px; border-left: 4px solid #2563eb; font-weight: bold; color: #1e293b; }
     </style>
 </head>
 <body>
 
 <div class="app-container">
+    <!-- ТАБ ТОВЧНУУД -->
     <div class="nav-btns">
         <button id="btn-learn" class="nav-btn active" onclick="switchTab('learn')">📖 Хичээл & Сорил</button>
-        <button id="btn-admin" class="nav-btn" onclick="switchTab('admin')">⚙️ Засварлах (Editor)</button>
+        <button id="btn-admin" class="nav-btn" onclick="switchTab('admin')">⚙️ Засварлах</button>
     </div>
 
-    <!-- 1. НҮҮР ХҮҮДЭС -->
+    <!-- 1. НҮҮР ХҮҮДЭС (ХИЧЭЭЛҮҮД) -->
     <div id="tab-learn">
+        <div id="topic-filter-container" style="margin-bottom: 15px;">
+            <label style="font-size: 13px; font-weight: bold; color: #64748b;">Сэдвээр шүүх:</label>
+            <select id="filter-topic" onchange="renderLessons()" style="margin-top: 4px;">
+                <option value="ALL">Бүх сэдэв</option>
+            </select>
+        </div>
         <div id="lesson-list"></div>
     </div>
 
-    <!-- 2. ЗАСВАРЛАХ ХЭСЭГ -->
+    <!-- 2. ЗАСВАРЛАХ ХЭСЭГ (EDITOR) -->
     <div id="tab-admin" class="hidden">
         <h3>⚙️ Шинэ хичээл & сорил нэмэх</h3>
         <div class="card">
+            <label>Сэдвийн нэр (Ангилал):</label>
+            <input type="text" id="add-topic" placeholder="жишээ нь: Цахилгаан техник, Сэдэв 1 гэх мэт">
+
             <label>Хичээлийн гарчиг:</label>
-            <input type="text" id="add-title" placeholder="жишээ нь: Цахилгааны аюулгүй ажиллагаа">
+            <input type="text" id="add-title" placeholder="жишээ нь: Омын хууль">
             
-            <label>Богино онол (Текст):</label>
-            <textarea id="add-theory" rows="4" placeholder="Онолын товч агуулга бичих..."></textarea>
+            <label>Онол (Агуулга):</label>
+            <textarea id="add-theory" rows="4" placeholder="Хичээлийн онолыг энд бичнэ үү..."></textarea>
             
-            <h4>❓ Сорил тест нэмэх</h4>
+            <hr style="border:none; border-top:1px dashed #ccc; margin:15px 0;">
+            <h4 style="margin-top:0;">❓ Сорил тест нэмэх</h4>
             <label>Асуулт:</label>
             <input type="text" id="add-q-text" placeholder="Асуултаа энд бичнэ үү">
             
@@ -68,10 +82,11 @@
 </div>
 
 <script>
-    // Санах ойгоос дата авна (байхгүй бол анхны жишээ дата харуулна)
-    let lessons = JSON.parse(localStorage.getItem('my_lessons')) || [
+    // Санах ойгоос дата авна
+    let lessons = JSON.parse(localStorage.getItem('my_lessons_v2')) || [
         {
-            id: Date.now(),
+            id: 1,
+            topic: "Хөдөлмөрийн аюулгүй байдал",
             title: "1. Цахилгааны аюулгүй ажиллагаа",
             theory: "Цахилгаан хэрэгсэлтэй ажиллахдаа заавал тусгаарлагч бээлий болон тусгай багаж хэрэгсэл ашиглах шаардлагатай.",
             quiz: {
@@ -83,25 +98,46 @@
     ];
 
     function saveToStorage() {
-        localStorage.setItem('my_lessons', JSON.stringify(lessons));
+        localStorage.setItem('my_lessons_v2', JSON.stringify(lessons));
+    }
+
+    function updateTopicFilterOptions() {
+        const filterSelect = document.getElementById('filter-topic');
+        const currentVal = filterSelect.value;
+        const topics = [...new Set(lessons.map(l => l.topic || "Бусад"))];
+
+        filterSelect.innerHTML = '<option value="ALL">Бүх сэдэв харах</option>';
+        topics.forEach(t => {
+            filterSelect.innerHTML += `<option value="${t}">${t}</option>`;
+        });
+        filterSelect.value = currentVal;
     }
 
     function renderLessons() {
         const container = document.getElementById('lesson-list');
+        const selectedTopic = document.getElementById('filter-topic').value;
         container.innerHTML = '';
 
-        if (lessons.length === 0) {
-            container.innerHTML = '<p style="text-align:center; color:#666;">Одоогоор хичээл оруулаагүй байна. "Засварлах" хэсгээс нэмээрэй.</p>';
+        updateTopicFilterOptions();
+
+        let filtered = lessons;
+        if(selectedTopic !== 'ALL') {
+            filtered = lessons.filter(l => (l.topic || "Бусад") === selectedTopic);
+        }
+
+        if (filtered.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:#666; margin-top:20px;">Энэ сэдэвт хичээл одоогоор алга байна.</p>';
             return;
         }
 
-        lessons.forEach((l, index) => {
+        filtered.forEach((l, index) => {
             container.innerHTML += `
                 <div class="card">
-                    <h2>${l.title}</h2>
+                    <span class="topic-badge">📂 ${l.topic || "Бусад"}</span>
+                    <h2 style="margin-top:5px; margin-bottom:10px;">${l.title}</h2>
                     <p style="color:#4b5563; line-height: 1.5;">${l.theory}</p>
                     <hr style="border:none; border-top:1px solid #eee; margin:15px 0;">
-                    <h4>🧠 Сорил тест</h4>
+                    <h4 style="margin:5px 0;">🧠 Сорил тест</h4>
                     <p><b>${l.quiz.question}</b></p>
                     ${l.quiz.options.map((opt, i) => `
                         <div class="quiz-opt" onclick="checkAnswer(${index}, ${i}, ${l.quiz.correct}, this)">
@@ -121,7 +157,10 @@
         lessons.forEach((l, index) => {
             container.innerHTML += `
                 <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-                    <div><b>${l.title}</b></div>
+                    <div>
+                        <small style="color:#6b7280;">[${l.topic || "Бусад"}]</small><br>
+                        <b>${l.title}</b>
+                    </div>
                     <button class="btn btn-danger" style="width:auto; margin:0;" onclick="deleteLesson(${index})">Устгах</button>
                 </div>
             `;
@@ -129,6 +168,7 @@
     }
 
     function saveLesson() {
+        const topic = document.getElementById('add-topic').value.trim() || "Ерөнхий сэдэв";
         const title = document.getElementById('add-title').value;
         const theory = document.getElementById('add-theory').value;
         const qText = document.getElementById('add-q-text').value;
@@ -136,12 +176,13 @@
         const correct = parseInt(document.getElementById('add-correct').value);
 
         if(!title || !theory || !qText) {
-            alert("Мэдээллийг бүрэн засаж оруулна уу!");
+            alert("Гарчиг, онол болон асуултыг бүрэн засаж оруулна уу!");
             return;
         }
 
         lessons.push({
             id: Date.now(),
+            topic: topic,
             title: title,
             theory: theory,
             quiz: {
@@ -174,7 +215,7 @@
     function checkAnswer(lessonIdx, selectedOpt, correctOpt, el) {
         const resEl = document.getElementById(`res-${lessonIdx}`);
         if(selectedOpt === correctOpt) {
-            resEl.innerText = "✅ Зөв байна! Зөв хариуллаа.";
+            resEl.innerText = "✅ Зөв байна! Амжилттай.";
             resEl.style.color = "#16a34a";
         } else {
             resEl.innerText = "❌ Буруу байна! Дахин оролдоорой.";
@@ -191,8 +232,9 @@
         } else {
             document.getElementById('btn-admin').classList.add('active');
             document.getElementById('btn-learn').classList.remove('active');
-            document.getElementById('tab-learn').classList.add('hidden');
+            document.getElementById('tab-learn').classList.remove('hidden');
             document.getElementById('tab-admin').classList.remove('hidden');
+            document.getElementById('tab-learn').classList.add('hidden');
         }
     }
 
