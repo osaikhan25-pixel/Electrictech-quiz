@@ -9,14 +9,15 @@
         body { background: #f4f6f8; margin: 0; padding: 15px; display: flex; justify-content: center; }
         .app-container { background: white; width: 100%; max-width: 500px; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         .nav-btns { display: flex; gap: 8px; margin-bottom: 20px; }
-        .nav-btn { flex: 1; padding: 10px; border: none; background: #eef2f5; color: #555; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .nav-btn { flex: 1; padding: 12px; border: none; background: #eef2f5; color: #555; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; }
         .nav-btn.active { background: #2563eb; color: white; }
         .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
-        .btn { background: #2563eb; color: white; border: none; padding: 10px 15px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn { background: #2563eb; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 15px; }
         .btn-danger { background: #dc2626; }
         .btn-success { background: #16a34a; }
-        input, textarea, select { width: 100%; padding: 10px; margin-top: 6px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 8px; }
-        .quiz-opt { background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px; border-radius: 8px; margin-top: 8px; cursor: pointer; }
+        input, textarea, select { width: 100%; padding: 10px; margin-top: 6px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
+        .quiz-opt { background: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; margin-top: 8px; cursor: pointer; transition: background 0.2s; }
+        .quiz-opt:active { background: #e2e8f0; }
         .hidden { display: none; }
     </style>
 </head>
@@ -24,25 +25,26 @@
 
 <div class="app-container">
     <div class="nav-btns">
-        <button class="nav-btn active" onclick="switchTab('learn')">📖 Хичээл & Сорил</button>
-        <button class="nav-btn" onclick="switchTab('admin')">⚙️ Засварлах (Editor)</button>
+        <button id="btn-learn" class="nav-btn active" onclick="switchTab('learn')">📖 Хичээл & Сорил</button>
+        <button id="btn-admin" class="nav-btn" onclick="switchTab('admin')">⚙️ Засварлах (Editor)</button>
     </div>
 
+    <!-- 1. НҮҮР ХҮҮДЭС -->
     <div id="tab-learn">
-        <div id="loading">Мэдээллийг уншиж байна...</div>
         <div id="lesson-list"></div>
     </div>
 
+    <!-- 2. ЗАСВАРЛАХ ХЭСЭГ -->
     <div id="tab-admin" class="hidden">
-        <h3>⚙️ Онлайн датабэйст нэмэх</h3>
+        <h3>⚙️ Шинэ хичээл & сорил нэмэх</h3>
         <div class="card">
             <label>Хичээлийн гарчиг:</label>
             <input type="text" id="add-title" placeholder="жишээ нь: Цахилгааны аюулгүй ажиллагаа">
             
             <label>Богино онол (Текст):</label>
-            <textarea id="add-theory" rows="4" placeholder="Онолын товч агуулга..."></textarea>
+            <textarea id="add-theory" rows="4" placeholder="Онолын товч агуулга бичих..."></textarea>
             
-            <h4>❓ Тест асуулт нэмэх</h4>
+            <h4>❓ Сорил тест нэмэх</h4>
             <label>Асуулт:</label>
             <input type="text" id="add-q-text" placeholder="Асуултаа энд бичнэ үү">
             
@@ -58,127 +60,146 @@
                 <option value="2">Сонголт В</option>
             </select>
 
-            <button class="btn btn-success" onclick="saveToFirebase()">🚀 Нийтлэх (Шинэчлэх)</button>
+            <button class="btn btn-success" onclick="saveLesson()">🚀 Санах ойд хадгалах</button>
         </div>
 
         <div id="admin-manage-list"></div>
     </div>
 </div>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-  // ⚠️ ЭНЭ ХЭСЭГТ FIREBASE-ЭЭС АВСАН ТҮЛХҮҮРҮҮДЭЭ ОРУУЛААРАЙ
-  const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-    projectId: "YOUR_PROJECT",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_ID",
-    appId: "YOUR_APP_ID"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-  const lessonsRef = ref(db, 'lessons');
-
-  let currentLessons = {};
-
-  onValue(lessonsRef, (snapshot) => {
-    const data = snapshot.val();
-    currentLessons = data || {};
-    document.getElementById('loading').style.display = 'none';
-    renderLessons();
-    renderAdminList();
-  });
-
-  window.renderLessons = function() {
-    const container = document.getElementById('lesson-list');
-    container.innerHTML = '';
-
-    const keys = Object.keys(currentLessons);
-    if(keys.length === 0) {
-      container.innerHTML = '<p style="text-align:center; color:#666;">Одоогоор ямар нэгэн хичээл оруулаагүй байна. Засварлах хэсгээс шинэ хичээл нэмээрэй.</p>';
-      return;
-    }
-
-    keys.forEach((key) => {
-      const l = currentLessons[key];
-      container.innerHTML += `
-        <div class="card">
-            <h2>${l.title}</h2>
-            <p style="color:#4b5563; line-height: 1.5;">${l.theory}</p>
-            <hr style="border:none; border-top:1px solid #eee; margin:15px 0;">
-            <h4>🧠 Сорил тест</h4>
-            <p><b>${l.quiz.question}</b></p>
-            ${l.quiz.options.map((opt, i) => `
-                <div class="quiz-opt" onclick="checkAnswer('${key}', ${i},${l.quiz.correct}, this)">
-                    ${opt}
-                </div>
-            `).join('')}
-            <p id="res-${key}" style="font-weight:bold; margin-top:10px;"></p>
-        </div>
-      `;
-    });
-  }
-
-  window.saveToFirebase = function() {
-    const title = document.getElementById('add-title').value;
-    const theory = document.getElementById('add-theory').value;
-    const qText = document.getElementById('add-q-text').value;
-    const optElements = document.querySelectorAll('.add-opt');
-    const correct = parseInt(document.getElementById('add-correct').value);
-
-    if(!title || !theory || !qText) {
-        alert("Мэдээллийг бүрэн засаж оруулна уу!");
-        return;
-    }
-
-    push(lessonsRef, {
-        title: title,
-        theory: theory,
-        quiz: {
-            question: qText,
-            options: [optElements[0].value, optElements[1].value, optElements[2].value],
-            correct: correct
+<script>
+    // Санах ойгоос дата авна (байхгүй бол анхны жишээ дата харуулна)
+    let lessons = JSON.parse(localStorage.getItem('my_lessons')) || [
+        {
+            id: Date.now(),
+            title: "1. Цахилгааны аюулгүй ажиллагаа",
+            theory: "Цахилгаан хэрэгсэлтэй ажиллахдаа заавал тусгаарлагч бээлий болон тусгай багаж хэрэгсэл ашиглах шаардлагатай.",
+            quiz: {
+                question: "Цахилгаан хүчдэлтэй байгаа хэсэгт ямар багаж ашиглах вэ?",
+                options: ["Энгийн металл бариултай", "Тусгаарлагчтай (изоляцитай)", "Ямар ч хамаагүй"],
+                correct: 1
+            }
         }
-    }).then(() => {
-        alert("Амжилттай нийтлэгдлээ! Бүх хэрэглэгчийн утас дээр шууд шинэчлэгдлээ.");
+    ];
+
+    function saveToStorage() {
+        localStorage.setItem('my_lessons', JSON.stringify(lessons));
+    }
+
+    function renderLessons() {
+        const container = document.getElementById('lesson-list');
+        container.innerHTML = '';
+
+        if (lessons.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:#666;">Одоогоор хичээл оруулаагүй байна. "Засварлах" хэсгээс нэмээрэй.</p>';
+            return;
+        }
+
+        lessons.forEach((l, index) => {
+            container.innerHTML += `
+                <div class="card">
+                    <h2>${l.title}</h2>
+                    <p style="color:#4b5563; line-height: 1.5;">${l.theory}</p>
+                    <hr style="border:none; border-top:1px solid #eee; margin:15px 0;">
+                    <h4>🧠 Сорил тест</h4>
+                    <p><b>${l.quiz.question}</b></p>
+                    ${l.quiz.options.map((opt, i) => `
+                        <div class="quiz-opt" onclick="checkAnswer(${index}, ${i}, ${l.quiz.correct}, this)">
+                            ${opt}
+                        </div>
+                    `).join('')}
+                    <p id="res-${index}" style="font-weight:bold; margin-top:10px;"></p>
+                </div>
+            `;
+        });
+    }
+
+    function renderAdminList() {
+        const container = document.getElementById('admin-manage-list');
+        container.innerHTML = '<h4>Нэмэгдсэн хичээлүүд:</h4>';
+
+        lessons.forEach((l, index) => {
+            container.innerHTML += `
+                <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div><b>${l.title}</b></div>
+                    <button class="btn btn-danger" style="width:auto; margin:0;" onclick="deleteLesson(${index})">Устгах</button>
+                </div>
+            `;
+        });
+    }
+
+    function saveLesson() {
+        const title = document.getElementById('add-title').value;
+        const theory = document.getElementById('add-theory').value;
+        const qText = document.getElementById('add-q-text').value;
+        const optElements = document.querySelectorAll('.add-opt');
+        const correct = parseInt(document.getElementById('add-correct').value);
+
+        if(!title || !theory || !qText) {
+            alert("Мэдээллийг бүрэн засаж оруулна уу!");
+            return;
+        }
+
+        lessons.push({
+            id: Date.now(),
+            title: title,
+            theory: theory,
+            quiz: {
+                question: qText,
+                options: [optElements[0].value, optElements[1].value, optElements[2].value],
+                correct: correct
+            }
+        });
+
+        saveToStorage();
+        renderLessons();
+        renderAdminList();
+
+        alert("Амжилттай хадгалагдлаа!");
         document.getElementById('add-title').value = '';
         document.getElementById('add-theory').value = '';
         document.getElementById('add-q-text').value = '';
         optElements.forEach(o => o.value = '');
-    });
-  }
-
-  window.deleteLesson = function(key) {
-    if(confirm("Энэ хичээлийг датабэйсээс устгахдаа итгэлтэй байна уу?")) {
-      remove(ref(db, 'lessons/' + key));
     }
-  }
 
-  window.renderAdminList = function() {
-    const container = document.getElementById('admin-manage-list');
-    container.innerHTML = '<h4>Нийтлэгдсэн хичээлүүд:</h4>';
+    function deleteLesson(index) {
+        if(confirm("Энэ хичээлийг устгах уу?")) {
+            lessons.splice(index, 1);
+            saveToStorage();
+            renderLessons();
+            renderAdminList();
+        }
+    }
 
-    Object.keys(currentLessons).forEach((key) => {
-        const l = currentLessons[key];
-        container.innerHTML += `
-            <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-                <div><b>${l.title}</b></div>
-                <button class="btn btn-danger" style="width:auto; margin:0;" onclick="deleteLesson('${key}')">Устгах</button>
-            </div>
-        `;
-    });
-  }
+    function checkAnswer(lessonIdx, selectedOpt, correctOpt, el) {
+        const resEl = document.getElementById(`res-${lessonIdx}`);
+        if(selectedOpt === correctOpt) {
+            resEl.innerText = "✅ Зөв байна! Зөв хариуллаа.";
+            resEl.style.color = "#16a34a";
+        } else {
+            resEl.innerText = "❌ Буруу байна! Дахин оролдоорой.";
+            resEl.style.color = "#dc2626";
+        }
+    }
 
-  window.checkAnswer = function(key, selectedOpt, correctOpt, el) {
-    const resEl = document.getElementById(`res-${key}`);
-    if(selectedOpt === correctOpt) {
-        resEl.innerText = "✅ Зөв байна! Зөв хариуллаа.";
-        resEl.style.color = "#16a34a";
-    } else {
-        resEl.innerText = "❌ Буруу байна! Дахин оролдоорой.";
-        resEl.style.
+    function switchTab(tab) {
+        if(tab === 'learn') {
+            document.getElementById('btn-learn').classList.add('active');
+            document.getElementById('btn-admin').classList.remove('active');
+            document.getElementById('tab-learn').classList.remove('hidden');
+            document.getElementById('tab-admin').classList.add('hidden');
+        } else {
+            document.getElementById('btn-admin').classList.add('active');
+            document.getElementById('btn-learn').classList.remove('active');
+            document.getElementById('tab-learn').classList.add('hidden');
+            document.getElementById('tab-admin').classList.remove('hidden');
+        }
+    }
+
+    // Анх нээгдэхэд ажиллуулах
+    renderLessons();
+    renderAdminList();
+</script>
+
+</body>
+</html>
