@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Сургалтын Систем</title>
+
+    <!-- Текст таних OCR сан -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
     <style>
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background: #f4f6f8; margin: 0; padding: 15px; display: flex; justify-content: center; }
@@ -18,6 +22,7 @@
         .btn-warning { background: #f59e0b; color: white; }
         .btn-danger { background: #dc2626; color: white; }
         .btn-success { background: #16a34a; color: white; }
+        .btn-scan { background: #4f46e5; color: white; padding: 8px; margin-top: 5px; font-size: 12px; }
         .btn-save-all { background: #059669; color: white; font-size: 16px; padding: 14px; border-radius: 10px; width: 100%; box-shadow: 0 3px 10px rgba(5, 150, 105, 0.3); margin-bottom: 15px; }
         
         input, textarea, select { width: 100%; padding: 10px; margin-top: 6px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
@@ -32,6 +37,9 @@
         
         .lesson-img { width: 100%; max-height: 250px; object-fit: cover; border-radius: 8px; margin-bottom: 12px; }
         .item-row { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-top: 6px; }
+
+        .scan-box { background: #f0fdf4; border: 1px dashed #16a34a; padding: 10px; border-radius: 8px; margin-bottom: 12px; text-align: center; }
+        #ocr-status { font-size: 12px; color: #2563eb; font-weight: bold; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -99,16 +107,32 @@
                 <option value="QUIZ">🧠 Сорил тест нэмэх</option>
             </select>
 
-            <!-- ОНОЛ НЭМЭХ MAЯГТ -->
+            <!-- ОНОЛ НЭМЭХ МАЯГТ -->
             <div id="form-theory-box">
                 <label>Онолын гарчиг (Заавал биш):</label>
                 <input type="text" id="add-theory-title" placeholder="жишээ нь: 1.1 Техник ашиглалт">
 
-                <label>Зургийн линк (URL холбоос - Заавал биш):</label>
+                <!-- ЗУРГААС ТЕКСТ УНШИХ/СКАЙНДАХ ХЭСЭГ -->
+                <div class="scan-box">
+                    <label style="font-weight:bold; color:#15803d; font-size:13px;">📷 Зурагнаас текст сканнердах / Уншуулах:</label>
+                    <div style="display:flex; gap:8px; margin-top:6px;">
+                        <label class="btn btn-scan" style="flex:1; margin:0; cursor:pointer;">
+                            📷 Камераар зураг авах
+                            <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="processImageOCR(this)">
+                        </label>
+                        <label class="btn btn-scan" style="flex:1; margin:0; cursor:pointer;">
+                            🖼️ Галерейгаас оруулж уншуулах
+                            <input type="file" accept="image/*" style="display:none;" onchange="processImageOCR(this)">
+                        </label>
+                    </div>
+                    <div id="ocr-status"></div>
+                </div>
+
+                <label>Зургийн линк (URL эсвэл Сканнердсан зураг):</label>
                 <input type="text" id="add-img-url" placeholder="https://example.com/image.jpg">
 
                 <label>Онолын агуулга (Текст):</label>
-                <textarea id="add-theory" rows="4" placeholder="Онолын мэдээллээ энд бичнэ үү..."></textarea>
+                <textarea id="add-theory" rows="5" placeholder="Онолын мэдээллээ энд бичнэ үү... (Зураг уншуулвал энд текст шууд орох болно)"></textarea>
                 
                 <button class="btn btn-success" onclick="addTheoryItem()">📖 Энэ бүлэгт Онол нэмэх</button>
             </div>
@@ -143,7 +167,7 @@
 </div>
 
 <script>
-    let topicsData = JSON.parse(localStorage.getItem('my_topics_v11')) || [
+    let topicsData = JSON.parse(localStorage.getItem('my_topics_v12')) || [
         {
             id: 1,
             title: "1-р бүлэг: Цахилгааны аюулгүй байдал",
@@ -165,13 +189,55 @@
     ];
 
     function saveData() {
-        localStorage.setItem('my_topics_v11', JSON.stringify(topicsData));
+        localStorage.setItem('my_topics_v12', JSON.stringify(topicsData));
     }
 
     function manualSaveAll() {
         saveData();
         refreshAllViews();
         alert("🎉 Бүх өөрчлөлт хадгалагдлаа!");
+    }
+
+    // --- ЗУРГААС ТЕКСТ УНШИХ (SCAN / OCR) ФУНКЦ ---
+    async function processImageOCR(input) {
+        if (!input.files || !input.files[0]) return;
+        const file = input.files[0];
+
+        const statusDiv = document.getElementById('ocr-status');
+        statusDiv.innerText = "⏳ Зургийг уншиж байна, түр хүлээнэ үү...";
+
+        // Зургийг base64 болгож зургийн хэсэгт харуулахаар бэлтгэх
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            document.getElementById('add-img-url').value = e.target.result;
+        };
+        reader.readAsDataURL(file);
+
+        try {
+            // Tesseract.js санг ашиглан зургийг текст болгох (Англи + Монгол латин/кирилл танина)
+            const result = await Tesseract.recognize(file, 'mon+eng', {
+                logger: m => {
+                    if(m.status === 'recognizing text') {
+                        statusDiv.innerText = `⏳ Текст уншиж байна... ${Math.round(m.progress * 100)}%`;
+                    }
+                }
+            });
+
+            const scannedText = result.data.text.trim();
+            const textarea = document.getElementById('add-theory');
+            
+            // Залгаж бичих эсвэл шууд оруулна
+            if(textarea.value.trim() !== "") {
+                textarea.value += "\n\n" + scannedText;
+            } else {
+                textarea.value = scannedText;
+            }
+
+            statusDiv.innerText = "✅ Текст амжилттай уншиж орууллаа!";
+        } catch (err) {
+            console.error(err);
+            statusDiv.innerText = "❌ Текст уншихад алдаа гарлаа. Та дахин туршина уу.";
+        }
     }
 
     function createNewGroup() {
@@ -213,7 +279,6 @@
         }
     }
 
-    // --- ОНОЛ ЗАСАХ & УСТГАХ ---
     function editTheory(tIdx, thIdx) {
         const th = topicsData[tIdx].theories[thIdx];
         const newTitle = prompt("Онолын гарчиг:", th.title || "");
@@ -240,7 +305,6 @@
         }
     }
 
-    // --- СОРИЛ ЗАСАХ & УСТГАХ ---
     function editQuiz(tIdx, qIdx) {
         const q = topicsData[tIdx].quizzes[qIdx];
         const newQ = prompt("Асуулт:", q.question);
@@ -307,7 +371,6 @@
         });
     }
 
-    // АГУУЛГА ЗАСАХ/УСТГАХ ЖАГСААЛТ РЕНДЭРЛЭХ
     function renderAdminContentsManage() {
         const container = document.getElementById('admin-contents-manage');
         container.innerHTML = '';
@@ -406,6 +469,7 @@
         document.getElementById('add-theory-title').value = '';
         document.getElementById('add-img-url').value = '';
         document.getElementById('add-theory').value = '';
+        document.getElementById('ocr-status').innerText = '';
     }
 
     function addQuizItem() {
