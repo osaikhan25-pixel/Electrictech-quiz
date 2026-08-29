@@ -18,6 +18,7 @@
         .btn-warning { background: #f59e0b; color: white; }
         .btn-danger { background: #dc2626; color: white; }
         .btn-success { background: #16a34a; }
+        .btn-save-all { background: #059669; color: white; font-size: 16px; padding: 14px; border-radius: 10px; box-shadow: 0 3px 10px rgba(5, 150, 105, 0.3); }
         
         input, textarea, select { width: 100%; padding: 10px; margin-top: 6px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
         .topic-item { background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; }
@@ -69,8 +70,11 @@
     <!-- 2. ЗАСВАРЛАХ ХЭСЭГ (EDITOR) -->
     <div id="tab-admin" class="hidden">
         
-        <!-- БҮЛЭГ УДАРДАХ ХЭСЭГ -->
-        <h3>📁 1. Бүлэг удирах (Нэмэх / Засах / Хасах)</h3>
+        <!-- БҮГДИЙГ ХАДГАЛАХ ТОВЧ (ДЭЭРЭЭ) -->
+        <button class="btn btn-save-all" onclick="manualSaveAll()" style="margin-bottom:20px;">💾 БҮХ ӨӨРЧЛӨЛТИЙГ ХАДГАЛАХ</button>
+
+        <!-- БҮЛЭГ УДИРДАХ ХЭСЭГ -->
+        <h3>📁 1. Бүлэг удирдах (Нэмэх / Засах / Хасах)</h3>
         <div class="card" style="background:#f8fafc;">
             <label>Шинэ бүлэг нэмэх:</label>
             <div style="display:flex; gap:8px;">
@@ -109,7 +113,7 @@
                 <label>Онолын агуулга (Текст):</label>
                 <textarea id="add-theory" rows="4" placeholder="Онолын текстээ энд бичнэ үү..."></textarea>
                 
-                <button class="btn btn-success" onclick="addTheoryItem()">📖 Онол нэмж хадгалах</button>
+                <button class="btn btn-success" onclick="addTheoryItem()">📖 Онол нэмэх</button>
             </div>
 
             <!-- СОРИЛ НЭМЭХ МАЯГТ -->
@@ -129,14 +133,17 @@
                     <option value="2">Сонголт В</option>
                 </select>
 
-                <button class="btn btn-success" onclick="addQuizItem()">🧠 Сорил нэмж хадгалах</button>
+                <button class="btn btn-success" onclick="addQuizItem()">🧠 Сорил нэмэх</button>
             </div>
         </div>
+
+        <!-- БҮГДИЙГ ХАДГАЛАХ ТОВЧ (ДООРОО) -->
+        <button class="btn btn-save-all" onclick="manualSaveAll()" style="margin-top:10px; margin-bottom:30px;">💾 БҮХ ӨӨРЧЛӨЛТИЙГ ХАДГАЛАХ</button>
     </div>
 </div>
 
 <script>
-    let topicsData = JSON.parse(localStorage.getItem('my_topics_v7')) || [
+    let topicsData = JSON.parse(localStorage.getItem('my_topics_v8')) || [
         {
             id: 1,
             title: "1-р бүлэг: Цахилгааны аюулгүй байдал",
@@ -158,7 +165,14 @@
     ];
 
     function saveData() {
-        localStorage.setItem('my_topics_v7', JSON.stringify(topicsData));
+        localStorage.setItem('my_topics_v8', JSON.stringify(topicsData));
+    }
+
+    // БҮХ ӨӨРЧЛӨЛТИЙГ БАТАЛГААЖУУЛЖ ХАДГАЛАХ ТОВЧНИЙ ФУНКЦ
+    function manualSaveAll() {
+        saveData();
+        refreshAllViews();
+        alert("🎉 Бүх бүлэг, онол, сорилын өөрчлөлтүүд амжилттай хадгалагдлаа!");
     }
 
     // --- БҮЛЭГ УДИРДАХ ФУНКЦҮҮД ---
@@ -180,7 +194,7 @@
         saveData();
         input.value = '';
         refreshAllViews();
-        alert("Шинэ бүлэг амжилттай үүслээ!");
+        alert("Шинэ бүлэг нэмэгдлээ. Төгсгөлд нь 'БҮХ ӨӨРЧЛӨЛТИЙГ ХАДГАЛАХ' товчийг дараарай!");
     }
 
     function editTopicTitle(idx) {
@@ -271,7 +285,7 @@
         saveData();
         refreshAllViews();
 
-        alert("Онол амжилттай хадгалагдлаа!");
+        alert("Онол нэмэгдлээ!");
         document.getElementById('add-theory-title').value = '';
         document.getElementById('add-img-url').value = '';
         document.getElementById('add-theory').value = '';
@@ -303,7 +317,7 @@
         saveData();
         refreshAllViews();
 
-        alert("Сорил тест амжилттай хадгалагдлаа!");
+        alert("Сорил тест нэмэгдлээ!");
         document.getElementById('add-q-text').value = '';
         optElements.forEach(o => o.value = '');
     }
