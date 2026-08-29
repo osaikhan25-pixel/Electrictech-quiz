@@ -17,7 +17,7 @@
         .btn-sm { padding: 6px 12px; font-size: 12px; width: auto; margin-top: 0; }
         .btn-warning { background: #f59e0b; color: white; }
         .btn-danger { background: #dc2626; color: white; }
-        .btn-success { background: #16a34a; }
+        .btn-success { background: #16a34a; color: white; }
         .btn-save-all { background: #059669; color: white; font-size: 16px; padding: 14px; border-radius: 10px; width: 100%; box-shadow: 0 3px 10px rgba(5, 150, 105, 0.3); margin-bottom: 15px; }
         
         input, textarea, select { width: 100%; padding: 10px; margin-top: 6px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
@@ -31,6 +31,7 @@
         .sub-nav button.active { background: #2563eb; color: white; }
         
         .lesson-img { width: 100%; max-height: 250px; object-fit: cover; border-radius: 8px; margin-bottom: 12px; }
+        .item-row { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-top: 6px; }
     </style>
 </head>
 <body>
@@ -98,7 +99,7 @@
                 <option value="QUIZ">🧠 Сорил тест нэмэх</option>
             </select>
 
-            <!-- ОНОЛ НЭМЭХ МАЯГТ -->
+            <!-- ОНОЛ НЭМЭХ MAЯГТ -->
             <div id="form-theory-box">
                 <label>Онолын гарчиг (Заавал биш):</label>
                 <input type="text" id="add-theory-title" placeholder="жишээ нь: 1.1 Техник ашиглалт">
@@ -133,12 +134,16 @@
             </div>
         </div>
 
-        <button class="btn btn-save-all" onclick="manualSaveAll()" style="margin-top:10px; margin-bottom:30px;">💾 БҮХ ӨӨРЧЛӨЛТИЙГ ХАДГАЛАХ</button>
+        <!-- АГУУЛГА ЗАСАХ / УСТГАХ ХЭСЭГ -->
+        <h3>✏️ 3. Бүлгийн агуулга засах / устгах</h3>
+        <div id="admin-contents-manage"></div>
+
+        <button class="btn btn-save-all" onclick="manualSaveAll()" style="margin-top:20px; margin-bottom:30px;">💾 БҮХ ӨӨРЧЛӨЛТИЙГ ХАДГАЛАХ</button>
     </div>
 </div>
 
 <script>
-    let topicsData = JSON.parse(localStorage.getItem('my_topics_v10')) || [
+    let topicsData = JSON.parse(localStorage.getItem('my_topics_v11')) || [
         {
             id: 1,
             title: "1-р бүлэг: Цахилгааны аюулгүй байдал",
@@ -160,7 +165,7 @@
     ];
 
     function saveData() {
-        localStorage.setItem('my_topics_v10', JSON.stringify(topicsData));
+        localStorage.setItem('my_topics_v11', JSON.stringify(topicsData));
     }
 
     function manualSaveAll() {
@@ -190,19 +195,77 @@
         alert("Шинэ бүлэг үүслээ!");
     }
 
-    function editTopicTitle(idx) {
-        const currentTitle = topicsData[idx].title;
+    function editTopicTitle(tIdx) {
+        const currentTitle = topicsData[tIdx].title;
         const newTitle = prompt("Бүлгийн шинэ нэрийг оруулна уу:", currentTitle);
         if(newTitle && newTitle.trim() !== "") {
-            topicsData[idx].title = newTitle.trim();
+            topicsData[tIdx].title = newTitle.trim();
             saveData();
             refreshAllViews();
         }
     }
 
-    function deleteTopic(idx) {
-        if(confirm(`"${topicsData[idx].title}" бүлгийг устгах уу?`)) {
-            topicsData.splice(idx, 1);
+    function deleteTopic(tIdx) {
+        if(confirm(`"${topicsData[tIdx].title}" бүлгийг бүх онол, сорилтой нь устгах уу?`)) {
+            topicsData.splice(tIdx, 1);
+            saveData();
+            refreshAllViews();
+        }
+    }
+
+    // --- ОНОЛ ЗАСАХ & УСТГАХ ---
+    function editTheory(tIdx, thIdx) {
+        const th = topicsData[tIdx].theories[thIdx];
+        const newTitle = prompt("Онолын гарчиг:", th.title || "");
+        const newImg = prompt("Зургийн линк (URL):", th.imageUrl || "");
+        const newText = prompt("Онолын текст:", th.text || "");
+
+        if(newText !== null || newImg !== null) {
+            topicsData[tIdx].theories[thIdx] = {
+                title: newTitle ? newTitle.trim() : "",
+                imageUrl: newImg ? newImg.trim() : "",
+                text: newText ? newText.trim() : ""
+            };
+            saveData();
+            refreshAllViews();
+            alert("Онол засагдлаа!");
+        }
+    }
+
+    function deleteTheory(tIdx, thIdx) {
+        if(confirm("Энэ онолыг устгах уу?")) {
+            topicsData[tIdx].theories.splice(thIdx, 1);
+            saveData();
+            refreshAllViews();
+        }
+    }
+
+    // --- СОРИЛ ЗАСАХ & УСТГАХ ---
+    function editQuiz(tIdx, qIdx) {
+        const q = topicsData[tIdx].quizzes[qIdx];
+        const newQ = prompt("Асуулт:", q.question);
+        if(newQ === null) return;
+
+        const optA = prompt("Сонголт А:", q.options[0] || "");
+        const optB = prompt("Сонголт Б:", q.options[1] || "");
+        const optC = prompt("Сонголт В:", q.options[2] || "");
+        const correct = prompt("Зөв хариултын индекс (0=А, 1=Б, 2=В):", q.correct);
+
+        if(newQ && optA && optB) {
+            topicsData[tIdx].quizzes[qIdx] = {
+                question: newQ.trim(),
+                options: [optA.trim(), optB.trim(), optC ? optC.trim() : ""],
+                correct: parseInt(correct) || 0
+            };
+            saveData();
+            refreshAllViews();
+            alert("Сорил засагдлаа!");
+        }
+    }
+
+    function deleteQuiz(tIdx, qIdx) {
+        if(confirm("Энэ сорил тестийг устгах уу?")) {
+            topicsData[tIdx].quizzes.splice(qIdx, 1);
             saveData();
             refreshAllViews();
         }
@@ -239,6 +302,64 @@
                         <button class="btn btn-warning btn-sm" onclick="editTopicTitle(${idx})">Засах</button>
                         <button class="btn btn-danger btn-sm" onclick="deleteTopic(${idx})">Устгах</button>
                     </div>
+                </div>
+            `;
+        });
+    }
+
+    // АГУУЛГА ЗАСАХ/УСТГАХ ЖАГСААЛТ РЕНДЭРЛЭХ
+    function renderAdminContentsManage() {
+        const container = document.getElementById('admin-contents-manage');
+        container.innerHTML = '';
+
+        if(topicsData.length === 0) {
+            container.innerHTML = '<p style="color:#666;">Ямар ч бүлэг байхгүй байна.</p>';
+            return;
+        }
+
+        topicsData.forEach((t, tIdx) => {
+            let thHtml = '';
+            if(t.theories && t.theories.length > 0) {
+                t.theories.forEach((th, thIdx) => {
+                    thHtml += `
+                        <div class="item-row" style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:13px;">📖 ${th.title || th.text.substring(0, 20) + '...'}</span>
+                            <div style="display:flex; gap:4px;">
+                                <button class="btn btn-warning btn-sm" onclick="editTheory(${tIdx}, ${thIdx})">Засах</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteTheory(${tIdx}, ${thIdx})">Устгах</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                thHtml = '<p style="font-size:12px; color:#888; margin:4px 0;">Онол байхгүй</p>';
+            }
+
+            let qHtml = '';
+            if(t.quizzes && t.quizzes.length > 0) {
+                t.quizzes.forEach((q, qIdx) => {
+                    qHtml += `
+                        <div class="item-row" style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:13px;">🧠 ${q.question}</span>
+                            <div style="display:flex; gap:4px;">
+                                <button class="btn btn-warning btn-sm" onclick="editQuiz(${tIdx}, ${qIdx})">Засах</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteQuiz(${tIdx}, ${qIdx})">Устгах</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                qHtml = '<p style="font-size:12px; color:#888; margin:4px 0;">Сорил байхгүй</p>';
+            }
+
+            container.innerHTML += `
+                <div class="card" style="background:#f8fafc;">
+                    <h4 style="margin-top:0; color:#1e293b;">${t.title}</h4>
+                    <b style="font-size:13px; color:#2563eb;">📖 Онолууд:</b>
+                    ${thHtml}
+                    <div style="height:10px;"></div>
+                    <b style="font-size:13px; color:#2563eb;">🧠 Сорил тестүүд:</b>
+                    ${qHtml}
                 </div>
             `;
         });
@@ -343,7 +464,6 @@
         });
     }
 
-    // ХООСОН БОЛ ХАРУУЛАХГҮЙ БАЙХ ЗАСВАР ЭНД ХИЙГДСЭН:
     function openTopic(idx) {
         const topic = topicsData[idx];
         document.getElementById('topic-list-view').classList.add('hidden');
@@ -448,6 +568,7 @@
         renderTopicList();
         renderAdminList();
         updateTopicSelectOptions();
+        renderAdminContentsManage();
     }
 
     refreshAllViews();
