@@ -41,7 +41,7 @@
         <button id="btn-admin" class="nav-btn" onclick="switchTab('admin')">⚙️ Засварлах</button>
     </div>
 
-    <!-- 1. НҮҮР ХЭСЭГ (БҮЛГҮҮД ДҮҮРГЭЛТ) -->
+    <!-- 1. НҮҮР ХЭСЭГ -->
     <div id="tab-learn">
         <div id="topic-list-view">
             <h3 style="margin-top:0;">Сургалтын бүлгүүд</h3>
@@ -138,7 +138,7 @@
 </div>
 
 <script>
-    let topicsData = JSON.parse(localStorage.getItem('my_topics_v9')) || [
+    let topicsData = JSON.parse(localStorage.getItem('my_topics_v10')) || [
         {
             id: 1,
             title: "1-р бүлэг: Цахилгааны аюулгүй байдал",
@@ -160,13 +160,13 @@
     ];
 
     function saveData() {
-        localStorage.setItem('my_topics_v9', JSON.stringify(topicsData));
+        localStorage.setItem('my_topics_v10', JSON.stringify(topicsData));
     }
 
     function manualSaveAll() {
         saveData();
         refreshAllViews();
-        alert("🎉 Бүх өөрчлөлт хадгалагдлаа! Дэлгэц шинэчлэгдлээ.");
+        alert("🎉 Бүх өөрчлөлт хадгалагдлаа!");
     }
 
     function createNewGroup() {
@@ -187,7 +187,7 @@
         saveData();
         input.value = '';
         refreshAllViews();
-        alert("Шинэ бүлэг үүслээ! Одоо доорх хэсгээс онол, сорилоо нэмнэ үү.");
+        alert("Шинэ бүлэг үүслээ!");
     }
 
     function editTopicTitle(idx) {
@@ -255,21 +255,20 @@
         }
     }
 
-    // ОНОЛ НЭМЭХ
     function addTheoryItem() {
         const selectVal = document.getElementById('select-topic').value;
         if(selectVal === "" || selectVal === null) {
-            alert("Эхлээд дээр бүлэг үүсгэнэ үү эсвэл бүлгээ сонгоно уу!");
+            alert("Эхлээд дээр бүлэг үүсгэнэ үү!");
             return;
         }
         const topicIdx = parseInt(selectVal);
 
-        const title = document.getElementById('add-theory-title').value;
-        const imageUrl = document.getElementById('add-img-url').value;
-        const text = document.getElementById('add-theory').value;
+        const title = document.getElementById('add-theory-title').value.trim();
+        const imageUrl = document.getElementById('add-img-url').value.trim();
+        const text = document.getElementById('add-theory').value.trim();
 
-        if(!text) {
-            alert("Онолын текстыг заавал бичнэ үү!");
+        if(!text && !imageUrl) {
+            alert("Онолын текст эсвэл Зургийн линкийн аль нэгийг заавал оруулна уу!");
             return;
         }
 
@@ -288,20 +287,19 @@
         document.getElementById('add-theory').value = '';
     }
 
-    // СОРИЛ НЭМЭХ
     function addQuizItem() {
         const selectVal = document.getElementById('select-topic').value;
         if(selectVal === "" || selectVal === null) {
-            alert("Эхлээд дээр бүлэг үүсгэнэ үү эсвэл бүлгээ сонгоно уу!");
+            alert("Эхлээд дээр бүлэг үүсгэнэ үү!");
             return;
         }
         const topicIdx = parseInt(selectVal);
 
-        const qText = document.getElementById('add-q-text').value;
+        const qText = document.getElementById('add-q-text').value.trim();
         const optElements = document.querySelectorAll('.add-opt');
         const correct = parseInt(document.getElementById('add-correct').value);
 
-        if(!qText || !optElements[0].value || !optElements[1].value) {
+        if(!qText || !optElements[0].value.trim() || !optElements[1].value.trim()) {
             alert("Асуулт болон сонголтуудыг бүрэн бичнэ үү!");
             return;
         }
@@ -312,7 +310,7 @@
 
         topicsData[topicIdx].quizzes.push({
             question: qText,
-            options: [optElements[0].value, optElements[1].value, optElements[2].value],
+            options: [optElements[0].value.trim(), optElements[1].value.trim(), optElements[2].value.trim()],
             correct: correct
         });
 
@@ -324,7 +322,6 @@
         optElements.forEach(o => o.value = '');
     }
 
-    // РЕНДЭР ФУНКЦҮҮД
     function renderTopicList() {
         const container = document.getElementById('topics-container');
         container.innerHTML = '';
@@ -346,6 +343,7 @@
         });
     }
 
+    // ХООСОН БОЛ ХАРУУЛАХГҮЙ БАЙХ ЗАСВАР ЭНД ХИЙГДСЭН:
     function openTopic(idx) {
         const topic = topicsData[idx];
         document.getElementById('topic-list-view').classList.add('hidden');
@@ -357,11 +355,15 @@
         thContainer.innerHTML = '';
         if(topic.theories && topic.theories.length > 0) {
             topic.theories.forEach(th => {
+                const titleHtml = th.title ? `<h3 style="margin-top:0;">${th.title}</h3>` : '';
+                const imgHtml = (th.imageUrl && th.imageUrl !== '') ? `<img class="lesson-img" src="${th.imageUrl}" alt="Онолын зураг">` : '';
+                const textHtml = th.text ? `<p style="line-height:1.6; color:#374151; white-space: pre-line;">${th.text}</p>` : '';
+
                 thContainer.innerHTML += `
                     <div class="card">
-                        ${th.title ? `<h3 style="margin-top:0;">${th.title}</h3>` : ''}
-                        ${th.imageUrl ? `<img class="lesson-img" src="${th.imageUrl}">` : ''}
-                        <p style="line-height:1.6; color:#374151; white-space: pre-line;">${th.text}</p>
+                        ${titleHtml}
+                        ${imgHtml}
+                        ${textHtml}
                     </div>
                 `;
             });
@@ -376,7 +378,9 @@
             topic.quizzes.forEach((q, qIdx) => {
                 let optsHtml = '';
                 q.options.forEach((opt, oIdx) => {
-                    optsHtml += `<div class="quiz-opt" onclick="checkAnswer(${qIdx}, ${oIdx}, ${q.correct})">${opt}</div>`;
+                    if(opt) {
+                        optsHtml += `<div class="quiz-opt" onclick="checkAnswer(${qIdx}, ${oIdx}, ${q.correct})">${opt}</div>`;
+                    }
                 });
 
                 qContainer.innerHTML += `
