@@ -53,9 +53,11 @@
         .search-input { width: 100%; padding: 12px 15px; border: 2px solid #2563eb; border-radius: 10px; font-size: 14px; outline: none; margin: 0; box-shadow: 0 2px 5px rgba(37,99,235,0.1); }
         .search-sub-item { background: #ffffff; border: 1px dashed #2563eb; border-radius: 8px; padding: 8px 12px; margin-top: 6px; font-size: 13px; color: #1e293b; cursor: pointer; transition: background 0.2s; }
         .search-sub-item:hover { background: #eff6ff; }
-        .highlight-match { background: #fef08a; padding: 0 2px; border-radius: 2px; }
         
-        .quiz-highlight { border: 2.5px solid #f59e0b !important; box-shadow: 0 0 10px rgba(245, 158, 11, 0.4); }
+        /* ТҮЛХҮҮР ҮГИЙГ НОГООНООР ТЭМДЭГЛЭХ СТАЙЛ */
+        .green-highlight { background-color: #dcfce7; color: #15803d; font-weight: bold; padding: 2px 4px; border-radius: 4px; border: 1px solid #86efac; }
+        
+        .quiz-highlight { border: 2.5px solid #16a34a !important; box-shadow: 0 0 10px rgba(22, 163, 74, 0.4); }
     </style>
 </head>
 <body>
@@ -218,6 +220,15 @@
         saveData();
         refreshAllViews();
         alert("🎉 Бүх өөрчлөлт хадгалагдлаа!");
+    }
+
+    // ТУСГАЙ ҮГИЙГ НОГООНООР НОГООН ХҮРЭЭТЭЙ ТЭМДЭГЛЭХ ФУНКЦ
+    function highlightText(text, query) {
+        if (!text) return "";
+        if (!query || query.trim() === "") return text;
+        
+        const reg = new RegExp(`(${query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
+        return text.replace(reg, '<span class="green-highlight">$1</span>');
     }
 
     async function processImageOCR(input) {
@@ -519,11 +530,12 @@
         optElements.forEach(o => o.value = '');
     }
 
-    // ДЭЛГЭРЭНГҮЙ ХАЙЛТЫН РЕНДЕР ФУНКЦ
+    // ТҮЛХҮҮР ҮГИЙГ НОГООНООР ТЭМДЭГЛЭДЭГ ХАЙЛТЫН РЕНДЕР ФУНКЦ
     function renderTopicList() {
         const container = document.getElementById('topics-container');
         const searchInput = document.getElementById('search-input');
-        const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+        const query = searchInput ? searchInput.value.trim() : '';
+        const queryLower = query.toLowerCase();
         
         container.innerHTML = '';
 
@@ -538,29 +550,27 @@
             const matchedTheories = [];
             const matchedQuizzes = [];
 
-            if(query !== "") {
-                // Онолуудаас хайх
+            if(queryLower !== "") {
                 if(t.theories) {
                     t.theories.forEach((th, thIdx) => {
-                        const titleMatch = th.title && th.title.toLowerCase().includes(query);
-                        const textMatch = th.text && th.text.toLowerCase().includes(query);
+                        const titleMatch = th.title && th.title.toLowerCase().includes(queryLower);
+                        const textMatch = th.text && th.text.toLowerCase().includes(queryLower);
                         if(titleMatch || textMatch) {
                             matchedTheories.push({ thIdx, th });
                         }
                     });
                 }
-                // Сорилуудаас хайх
                 if(t.quizzes) {
                     t.quizzes.forEach((q, qIdx) => {
-                        if(q.question.toLowerCase().includes(query)) {
+                        if(q.question.toLowerCase().includes(queryLower)) {
                             matchedQuizzes.push({ qIdx, q });
                         }
                     });
                 }
             }
 
-            const isTitleMatch = (query !== "") && t.title.toLowerCase().includes(query);
-            const isMatch = (query === "") || isTitleMatch || matchedTheories.length > 0 || matchedQuizzes.length > 0;
+            const isTitleMatch = (queryLower !== "") && t.title.toLowerCase().includes(queryLower);
+            const isMatch = (queryLower === "") || isTitleMatch || matchedTheories.length > 0 || matchedQuizzes.length > 0;
 
             if(isMatch) {
                 matchCount++;
@@ -569,34 +579,37 @@
                 
                 let resultsHtml = '';
                 
-                // Хайлттай үед олдсон онол, сорилуудыг дотор нь жагсаах
-                if(query !== "") {
+                if(queryLower !== "") {
                     if(matchedTheories.length > 0) {
-                        resultsHtml += `<div style="margin-top:8px; font-weight:bold; font-size:12px; color:#2563eb;">📖 Олдсон онолууд:</div>`;
+                        resultsHtml += `<div style="margin-top:8px; font-weight:bold; font-size:12px; color:#15803d;">📖 Олдсон онолууд:</div>`;
                         matchedTheories.forEach(item => {
-                            const name = item.th.title || (item.th.text ? item.th.text.substring(0, 30) + "..." : "Онол " + (item.thIdx+1));
+                            const rawName = item.th.title || (item.th.text ? item.th.text.substring(0, 35) + "..." : "Онол " + (item.thIdx+1));
+                            const highlightedName = highlightText(rawName, query);
                             resultsHtml += `
                                 <div class="search-sub-item" onclick="event.stopPropagation(); openTopicTarget(${idx}, 'theory', ${item.thIdx});">
-                                    📖 <b>${name}</b>
+                                    📖 <b>${highlightedName}</b>
                                 </div>
                             `;
                         });
                     }
                     if(matchedQuizzes.length > 0) {
-                        resultsHtml += `<div style="margin-top:8px; font-weight:bold; font-size:12px; color:#d97706;">🧠 Олдсон сорилууд:</div>`;
+                        resultsHtml += `<div style="margin-top:8px; font-weight:bold; font-size:12px; color:#15803d;">🧠 Олдсон сорилууд:</div>`;
                         matchedQuizzes.forEach(item => {
+                            const highlightedQ = highlightText(item.q.question, query);
                             resultsHtml += `
                                 <div class="search-sub-item" onclick="event.stopPropagation(); openTopicTarget(${idx}, 'quiz', ${item.qIdx});">
-                                    🧠 <b>${item.q.question}</b>
+                                    🧠 <b>${highlightedQ}</b>
                                 </div>
                             `;
                         });
                     }
                 }
 
+                const displayTitle = highlightText(t.title, query);
+
                 container.innerHTML += `
                     <div class="topic-item" onclick="openTopic(${idx})">
-                        <h3 style="margin:0 0 5px 0; color:#1e293b;">${t.title}</h3>
+                        <h3 style="margin:0 0 5px 0; color:#1e293b;">${displayTitle}</h3>
                         <span style="font-size:12px; color:#2563eb; font-weight:bold;">📖 ${thCount} онол | 🧠 ${qCount} сорил →</span>
                         ${resultsHtml}
                     </div>
@@ -604,12 +617,11 @@
             }
         });
 
-        if(matchCount === 0 && query !== "") {
+        if(matchCount === 0 && queryLower !== "") {
             container.innerHTML = '<p style="color:#666; text-align:center; padding: 20px 0;">🔍 Илэрц олдсонгүй.</p>';
         }
     }
 
-    // ХАЙЛТААС СОНГОЖ ШУУД ОНОЛ ЭСВЭЛ СОРИЛ РУУ ҮСЭРЧ НЭЭХ
     function openTopicTarget(tIdx, tabType, itemIdx) {
         openTopic(tIdx);
         switchSubTab(tabType);
@@ -631,18 +643,24 @@
 
     function openTopic(idx) {
         const topic = topicsData[idx];
+        const searchInput = document.getElementById('search-input');
+        const query = searchInput ? searchInput.value.trim() : '';
+
         document.getElementById('topic-list-view').classList.add('hidden');
         document.getElementById('topic-detail-view').classList.remove('hidden');
         document.getElementById('detail-topic-title').innerText = topic.title;
 
-        // Онолууд харуулах
+        // Онолууд харуулах болон хайсан үгийг ногооноор тодруулах
         const thContainer = document.getElementById('theory-items-container');
         thContainer.innerHTML = '';
         if(topic.theories && topic.theories.length > 0) {
             topic.theories.forEach((th, thIdx) => {
-                const titleHtml = th.title ? `<h3 style="margin-top:0;">${th.title}</h3>` : '';
+                const titleText = highlightText(th.title, query);
+                const bodyText = highlightText(th.text, query);
+
+                const titleHtml = th.title ? `<h3 style="margin-top:0;">${titleText}</h3>` : '';
                 const imgHtml = (th.imageUrl && th.imageUrl !== '') ? `<img class="lesson-img" src="${th.imageUrl}" alt="Онолын зураг">` : '';
-                const textHtml = th.text ? `<p style="line-height:1.6; color:#374151; white-space: pre-line;">${th.text}</p>` : '';
+                const textHtml = th.text ? `<p style="line-height:1.6; color:#374151; white-space: pre-line;">${bodyText}</p>` : '';
 
                 thContainer.innerHTML += `
                     <div class="card" id="theory-card-${thIdx}">
@@ -656,7 +674,7 @@
             thContainer.innerHTML = '<p style="color:#666; text-align:center;">Энэ бүлэгт одоогоор онол нэмэгдээгүй байна.</p>';
         }
 
-        // Сорилууд харуулах
+        // Сорилууд харуулах болон хайсан үгийг ногооноор тодруулах
         const qContainer = document.getElementById('quiz-items-container');
         qContainer.innerHTML = '';
         if(topic.quizzes && topic.quizzes.length > 0) {
@@ -668,9 +686,11 @@
                     }
                 });
 
+                const qText = highlightText(q.question, query);
+
                 qContainer.innerHTML += `
                     <div class="card" id="quiz-card-${qIdx}">
-                        <h4 style="margin-top:0;">${qIdx + 1}. ${q.question}</h4>
+                        <h4 style="margin-top:0;">${qIdx + 1}. ${qText}</h4>
                         <div>${optsHtml}</div>
                         <p id="q-res-${qIdx}" style="font-weight:bold; margin-top:10px;"></p>
                     </div>
