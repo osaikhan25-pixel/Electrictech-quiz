@@ -28,8 +28,15 @@
         input, textarea, select { width: 100%; padding: 10px; margin-top: 6px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
         .topic-item { background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; }
         .topic-item:hover { border-color: #2563eb; }
-        .quiz-opt { background: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; margin-top: 8px; cursor: pointer; }
-        .quiz-opt:active { background: #e2e8f0; }
+        
+        /* СОРИЛЫН ХАРИУЛТЫН СТАЙЛ */
+        .quiz-opt { background: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; margin-top: 8px; cursor: pointer; transition: all 0.2s ease; font-size: 14px; }
+        .quiz-opt:hover { background: #f1f5f9; }
+        .quiz-opt.opt-correct { background: #dcfce7 !important; border-color: #16a34a !important; color: #15803d !important; font-weight: bold; }
+        .quiz-opt.opt-wrong { background: #fee2e2 !important; border-color: #dc2626 !important; color: #b91c1c !important; text-decoration: line-through; }
+        .quiz-opt.opt-highlight-correct { border: 2.5px solid #16a34a !important; background: #f0fdf4 !important; color: #15803d !important; font-weight: bold; }
+        .quiz-opt.disabled { pointer-events: none; }
+
         .hidden { display: none; }
         .sub-nav { display: flex; gap: 10px; margin-bottom: 15px; }
         .sub-nav button { flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #2563eb; background: #eff6ff; color: #2563eb; font-weight: bold; cursor: pointer; }
@@ -132,7 +139,7 @@
                 <input type="text" id="add-img-url" placeholder="https://example.com/image.jpg">
 
                 <label>Онолын агуулга (Текст):</label>
-                <textarea id="add-theory" rows="5" placeholder="Онолын мэдээллээ энд бичнэ үү... (Зураг уншуулвал энд текст шууд орох болно)"></textarea>
+                <textarea id="add-theory" rows="5" placeholder="Онолын мэдээллээ энд бичнэ үү..."></textarea>
                 
                 <button class="btn btn-success" onclick="addTheoryItem()">📖 Энэ бүлэгт Онол нэмэх</button>
             </div>
@@ -167,7 +174,7 @@
 </div>
 
 <script>
-    let topicsData = JSON.parse(localStorage.getItem('my_topics_v12')) || [
+    let topicsData = JSON.parse(localStorage.getItem('my_topics_v13')) || [
         {
             id: 1,
             title: "1-р бүлэг: Цахилгааны аюулгүй байдал",
@@ -189,7 +196,7 @@
     ];
 
     function saveData() {
-        localStorage.setItem('my_topics_v12', JSON.stringify(topicsData));
+        localStorage.setItem('my_topics_v13', JSON.stringify(topicsData));
     }
 
     function manualSaveAll() {
@@ -198,7 +205,6 @@
         alert("🎉 Бүх өөрчлөлт хадгалагдлаа!");
     }
 
-    // --- ЗУРГААС ТЕКСТ УНШИХ (SCAN / OCR) ФУНКЦ ---
     async function processImageOCR(input) {
         if (!input.files || !input.files[0]) return;
         const file = input.files[0];
@@ -206,7 +212,6 @@
         const statusDiv = document.getElementById('ocr-status');
         statusDiv.innerText = "⏳ Зургийг уншиж байна, түр хүлээнэ үү...";
 
-        // Зургийг base64 болгож зургийн хэсэгт харуулахаар бэлтгэх
         const reader = new FileReader();
         reader.onload = function (e) {
             document.getElementById('add-img-url').value = e.target.result;
@@ -214,7 +219,6 @@
         reader.readAsDataURL(file);
 
         try {
-            // Tesseract.js санг ашиглан зургийг текст болгох (Англи + Монгол латин/кирилл танина)
             const result = await Tesseract.recognize(file, 'mon+eng', {
                 logger: m => {
                     if(m.status === 'recognizing text') {
@@ -226,7 +230,6 @@
             const scannedText = result.data.text.trim();
             const textarea = document.getElementById('add-theory');
             
-            // Залгаж бичих эсвэл шууд оруулна
             if(textarea.value.trim() !== "") {
                 textarea.value += "\n\n" + scannedText;
             } else {
@@ -563,12 +566,12 @@
                 let optsHtml = '';
                 q.options.forEach((opt, oIdx) => {
                     if(opt) {
-                        optsHtml += `<div class="quiz-opt" onclick="checkAnswer(${qIdx}, ${oIdx}, ${q.correct})">${opt}</div>`;
+                        optsHtml += `<div id="opt-${qIdx}-${oIdx}" class="quiz-opt" onclick="checkAnswer(${qIdx}, ${oIdx}, ${q.correct})">${opt}</div>`;
                     }
                 });
 
                 qContainer.innerHTML += `
-                    <div class="card">
+                    <div class="card" id="quiz-card-${qIdx}">
                         <h4 style="margin-top:0;">${qIdx + 1}. ${q.question}</h4>
                         <div>${optsHtml}</div>
                         <p id="q-res-${qIdx}" style="font-weight:bold; margin-top:10px;"></p>
@@ -587,13 +590,30 @@
         document.getElementById('topic-list-view').classList.remove('hidden');
     }
 
+    // --- ШИНЭЧИЛСЭН СОРИЛЫН ХАРИУЛТ ХАРАХ ФУНКЦ ---
     function checkAnswer(qIdx, selected, correct) {
         const msg = document.getElementById(`q-res-${qIdx}`);
+        const quizCard = document.getElementById(`quiz-card-${qIdx}`);
+        const opts = quizCard.querySelectorAll('.quiz-opt');
+
+        // Бусад бүх сонголтын дардаг боломжийг хаах (lock хийх)
+        opts.forEach(opt => opt.classList.add('disabled'));
+
+        const selectedElem = document.getElementById(`opt-${qIdx}-${selected}`);
+        const correctElem = document.getElementById(`opt-${qIdx}-${correct}`);
+
         if(selected === correct) {
-            msg.innerText = "✅ Зөв байна!";
+            // Зөв хариулсан тохиолдолд
+            selectedElem.classList.add('opt-correct');
+            msg.innerText = "✅ Зөв хариуллаа!";
             msg.style.color = "#16a34a";
         } else {
-            msg.innerText = "❌ Буруу байна! Дахин оролдоорой.";
+            // Буруу хариулсан тохиолдолд: Дарсан нь улаан болох, Яг зөвийг нь ногоон хүрээгээр зааж өгөх
+            selectedElem.classList.add('opt-wrong');
+            if(correctElem) {
+                correctElem.classList.add('opt-highlight-correct');
+            }
+            msg.innerText = "❌ Буруу байна! (Зөв хариултыг ногооноор хүрээлж харууллаа)";
             msg.style.color = "#dc2626";
         }
     }
