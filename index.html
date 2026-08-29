@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Сургалтын ба Сорилын Систем</title>
+    <title>Сургалтын Систем</title>
     <style>
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background: #f4f6f8; margin: 0; padding: 15px; display: flex; justify-content: center; }
@@ -14,12 +14,11 @@
         
         .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
         .btn { background: #2563eb; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 14px; }
-        .btn-outline { background: #fff; color: #2563eb; border: 1.5px solid #2563eb; }
         .btn-danger { background: #dc2626; padding: 6px 12px; font-size: 12px; width: auto; }
         .btn-success { background: #16a34a; }
         
         input, textarea, select { width: 100%; padding: 10px; margin-top: 6px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
-        .topic-item { background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: 0.2s; }
+        .topic-item { background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; }
         .topic-item:hover { border-color: #2563eb; }
         .quiz-opt { background: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; margin-top: 8px; cursor: pointer; }
         .quiz-opt:active { background: #e2e8f0; }
@@ -27,63 +26,73 @@
         .sub-nav { display: flex; gap: 10px; margin-bottom: 15px; }
         .sub-nav button { flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #2563eb; background: #eff6ff; color: #2563eb; font-weight: bold; cursor: pointer; }
         .sub-nav button.active { background: #2563eb; color: white; }
+        
+        /* Зургийн стил */
+        .lesson-img { width: 100%; max-height: 250px; object-fit: cover; border-radius: 8px; margin-bottom: 12px; }
     </style>
 </head>
 <body>
 
 <div class="app-container">
-    <!-- АПП-ЫН НАВИГАЦИ -->
     <div class="nav-btns">
         <button id="btn-learn" class="nav-btn active" onclick="switchTab('learn')">📂 Сэдвүүд</button>
         <button id="btn-admin" class="nav-btn" onclick="switchTab('admin')">⚙️ Засварлах</button>
     </div>
 
-    <!-- 1. СЭДВҮҮДИЙН ЖАГСААЛТ & НЭЭХ ХЭСЭГ -->
+    <!-- 1. СЭДВҮҮД -->
     <div id="tab-learn">
         <div id="topic-list-view">
             <h3 style="margin-top:0;">Сургалтын сэдвүүд</h3>
             <div id="topics-container"></div>
         </div>
 
-        <!-- СЭДЭВ ДОТОРХ ОНОЛ/СОРИЛ ХАРАХ -->
         <div id="topic-detail-view" class="hidden">
             <button onclick="backToTopics()" style="background:none; border:none; color:#2563eb; font-weight:bold; cursor:pointer; margin-bottom:10px;">← Буцах</button>
             <h2 id="detail-topic-title" style="margin-top:0;"></h2>
             
             <div class="sub-nav">
-                <button id="sub-btn-theory" class="active" onclick="switchSubTab('theory')">📖 Онол</button>
+                <button id="sub-btn-theory" class="active" onclick="switchSubTab('theory')">📖 Онол & Зураг</button>
                 <button id="sub-btn-quiz" onclick="switchSubTab('quiz')">🧠 Сорил тест</button>
             </div>
 
-            <!-- Онол хэсэг -->
+            <!-- Онол & Зураг хэсэг -->
             <div id="sub-tab-theory" class="card">
+                <img id="detail-img" class="lesson-img hidden" src="" alt="Сургалтын зураг">
                 <p id="detail-theory-text" style="line-height:1.6; color:#374151; white-space: pre-line;"></p>
             </div>
 
             <!-- Сорил хэсэг -->
             <div id="sub-tab-quiz" class="card hidden">
-                <h4 id="detail-quiz-q" style="margin-top:0;"></h4>
-                <div id="detail-quiz-opts"></div>
-                <p id="quiz-result-msg" style="font-weight:bold; margin-top:10px;"></p>
+                <div id="quiz-content">
+                    <h4 id="detail-quiz-q" style="margin-top:0;"></h4>
+                    <div id="detail-quiz-opts"></div>
+                    <p id="quiz-result-msg" style="font-weight:bold; margin-top:10px;"></p>
+                </div>
+                <div id="no-quiz-msg" class="hidden" style="color:#666; text-align:center;">
+                    Энэ сэдэвт одоогоор сорил тест байхгүй байна.
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- 2. ЗАСВАРЛАХ ХЭСЭГ (EDITOR) -->
+    <!-- 2. ЗАСВАРЛАХ ХЭСЭГ -->
     <div id="tab-admin" class="hidden">
         <h3>⚙️ Шинэ сэдэв нэмэх</h3>
         <div class="card">
             <label>1. Сэдвийн нэр:</label>
-            <input type="text" id="add-topic-name" placeholder="жишээ нь: Сэдэв 1: Цахилгаан аюулгүй ажиллагаа">
+            <input type="text" id="add-topic-name" placeholder="жишээ нь: Сэдэв 1: Цахилгаан схем">
 
-            <label>2. Сэдвийн онол (Унших текст):</label>
+            <label>2. Зургийн линк (URL холбоос - Заавал биш):</label>
+            <input type="text" id="add-img-url" placeholder="https://example.com/image.jpg">
+
+            <label>3. Сэдвийн онол (Текст):</label>
             <textarea id="add-theory" rows="5" placeholder="Онолын мэдээллээ энд бичнэ үү..."></textarea>
             
             <hr style="border:none; border-top:1px dashed #ccc; margin:15px 0;">
-            <h4 style="margin-top:0;">3. Сорил тест тохируулах</h4>
+            <h4 style="margin-top:0;">4. Сорил тест (Заавал биш)</h4>
             
             <label>Асуулт:</label>
-            <input type="text" id="add-q-text" placeholder="Асуултаа энд бичнэ үү">
+            <input type="text" id="add-q-text" placeholder="Асуултаа бичнэ үү (Хэрэв тестгүй бол хоосон орхино)">
             
             <label>Сонголтууд:</label>
             <input type="text" class="add-opt" placeholder="Сонголт А">
@@ -100,18 +109,18 @@
             <button class="btn btn-success" onclick="saveTopic()">🚀 Шинэ сэдэв хадгалах</button>
         </div>
 
-        <h4>Нэмэгдсэн сэдвүүдийг устгах / засах:</h4>
+        <h4>Нэмэгдсэн сэдвүүд:</h4>
         <div id="admin-topic-list"></div>
     </div>
 </div>
 
 <script>
-    // Санах ойн дата
-    let topicsData = JSON.parse(localStorage.getItem('my_topics_v3')) || [
+    let topicsData = JSON.parse(localStorage.getItem('my_topics_v4')) || [
         {
             id: 1,
             title: "Сэдэв 1: Цахилгааны аюулгүй байдал",
-            theory: "Цахилгаан хэрэгсэлтэй ажиллахдаа заавал тусгаарлагч бээлий болон тусгай багаж хэрэгсэл ашиглах шаардлагатай.\n\nХүчдэлтэй байгаа хэсэгт гараар хүрч болохгүй.",
+            imageUrl: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=500",
+            theory: "Цахилгаан хэрэгсэлтэй ажиллахдаа заавал тусгаарлагч бээлий болон тусгай багаж хэрэгсэл ашиглах шаардлагатай.\n\nЗаавар зөвлөмжийг чанд мөрдөнө үү.",
             quiz: {
                 question: "Цахилгаан хүчдэлтэй байгаа хэсэгт ямар багаж ашиглах вэ?",
                 options: ["Энгийн металл бариултай", "Тусгаарлагчтай (изоляцитай)", "Ямар ч хамаагүй"],
@@ -123,16 +132,15 @@
     let currentSelectedTopic = null;
 
     function saveData() {
-        localStorage.setItem('my_topics_v3', JSON.stringify(topicsData));
+        localStorage.setItem('my_topics_v4', JSON.stringify(topicsData));
     }
 
-    // Сэдвүүдийг нүүр хуудсанд харуулах
     function renderTopicList() {
         const container = document.getElementById('topics-container');
         container.innerHTML = '';
 
         if(topicsData.length === 0) {
-            container.innerHTML = '<p style="color:#666; text-align:center;">Одоогоор сэдэв нэмэгдээгүй байна. "Засварлах" хэсгээс нэмээрэй.</p>';
+            container.innerHTML = '<p style="color:#666; text-align:center;">Одоогоор сэдэв нэмэгдээгүй байна.</p>';
             return;
         }
 
@@ -140,13 +148,12 @@
             container.innerHTML += `
                 <div class="topic-item" onclick="openTopic(${idx})">
                     <h3 style="margin:0 0 5px 0; color:#1e293b;">${t.title}</h3>
-                    <span style="font-size:12px; color:#2563eb; font-weight:bold;">📖 Онол унших ба 🧠 Сорил өгөх →</span>
+                    <span style="font-size:12px; color:#2563eb; font-weight:bold;">📖 Онол, Зураг ${t.quiz && t.quiz.question ? '& 🧠 Сорил' : ''} →</span>
                 </div>
             `;
         });
     }
 
-    // Сэдэв дээр дарахад нээгдэх
     function openTopic(idx) {
         currentSelectedTopic = topicsData[idx];
         document.getElementById('topic-list-view').classList.add('hidden');
@@ -155,19 +162,39 @@
         document.getElementById('detail-topic-title').innerText = currentSelectedTopic.title;
         document.getElementById('detail-theory-text').innerText = currentSelectedTopic.theory;
         
-        // Сорил
-        document.getElementById('detail-quiz-q').innerText = currentSelectedTopic.quiz.question;
-        const optsContainer = document.getElementById('detail-quiz-opts');
-        optsContainer.innerHTML = '';
-        document.getElementById('quiz-result-msg').innerText = '';
+        // Зураг тохируулах
+        const imgEl = document.getElementById('detail-img');
+        if(currentSelectedTopic.imageUrl) {
+            imgEl.src = currentSelectedTopic.imageUrl;
+            imgEl.classList.remove('hidden');
+        } else {
+            imgEl.classList.add('hidden');
+        }
 
-        currentSelectedTopic.quiz.options.forEach((opt, oIdx) => {
-            optsContainer.innerHTML += `
-                <div class="quiz-opt" onclick="checkAnswer(${oIdx}, ${currentSelectedTopic.quiz.correct})">
-                    ${opt}
-                </div>
-            `;
-        });
+        // Сорил тохируулах
+        const quizContent = document.getElementById('quiz-content');
+        const noQuizMsg = document.getElementById('no-quiz-msg');
+        
+        if(currentSelectedTopic.quiz && currentSelectedTopic.quiz.question) {
+            quizContent.classList.remove('hidden');
+            noQuizMsg.classList.add('hidden');
+            
+            document.getElementById('detail-quiz-q').innerText = currentSelectedTopic.quiz.question;
+            const optsContainer = document.getElementById('detail-quiz-opts');
+            optsContainer.innerHTML = '';
+            document.getElementById('quiz-result-msg').innerText = '';
+
+            currentSelectedTopic.quiz.options.forEach((opt, oIdx) => {
+                optsContainer.innerHTML += `
+                    <div class="quiz-opt" onclick="checkAnswer(${oIdx}, ${currentSelectedTopic.quiz.correct})">
+                        ${opt}
+                    </div>
+                `;
+            });
+        } else {
+            quizContent.classList.add('hidden');
+            noQuizMsg.classList.remove('hidden');
+        }
 
         switchSubTab('theory');
     }
@@ -202,42 +229,48 @@
         }
     }
 
-    // Шинэ сэдэв нэмж хадгалах
     function saveTopic() {
         const title = document.getElementById('add-topic-name').value;
+        const imageUrl = document.getElementById('add-img-url').value;
         const theory = document.getElementById('add-theory').value;
         const qText = document.getElementById('add-q-text').value;
         const optElements = document.querySelectorAll('.add-opt');
         const correct = parseInt(document.getElementById('add-correct').value);
 
-        if(!title || !theory || !qText) {
-            alert("Сэдвийн нэр, онол болон сорилыг бүрэн бичнэ үү!");
+        if(!title || !theory) {
+            alert("Сэдвийн нэр болон онолыг заавал бичнэ үү!");
             return;
+        }
+
+        let quizData = null;
+        if(qText) {
+            quizData = {
+                question: qText,
+                options: [optElements[0].value, optElements[1].value, optElements[2].value],
+                correct: correct
+            };
         }
 
         topicsData.push({
             id: Date.now(),
             title: title,
+            imageUrl: imageUrl,
             theory: theory,
-            quiz: {
-                question: qText,
-                options: [optElements[0].value, optElements[1].value, optElements[2].value],
-                correct: correct
-            }
+            quiz: quizData
         });
 
         saveData();
         renderTopicList();
         renderAdminList();
 
-        alert("Шинэ сэдэв амжилттай нэмэгдлээ!");
+        alert("Амжилттай хадгалагдлаа!");
         document.getElementById('add-topic-name').value = '';
+        document.getElementById('add-img-url').value = '';
         document.getElementById('add-theory').value = '';
         document.getElementById('add-q-text').value = '';
         optElements.forEach(o => o.value = '');
     }
 
-    // Засварлах хэсэгт сэдвүүдийг устгах жагсаалт харуулах
     function renderAdminList() {
         const container = document.getElementById('admin-topic-list');
         container.innerHTML = '';
@@ -253,7 +286,7 @@
     }
 
     function deleteTopic(idx) {
-        if(confirm("Энэ сэдвийг бүх онол, сорилтой нь устгах уу?")) {
+        if(confirm("Энэ сэдвийг устгах уу?")) {
             topicsData.splice(idx, 1);
             saveData();
             renderTopicList();
@@ -276,7 +309,6 @@
         }
     }
 
-    // Анх хэрэгжүүлэх
     renderTopicList();
     renderAdminList();
 </script>
