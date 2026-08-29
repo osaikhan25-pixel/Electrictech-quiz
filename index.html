@@ -18,7 +18,7 @@
         .btn-warning { background: #f59e0b; color: white; }
         .btn-danger { background: #dc2626; color: white; }
         .btn-success { background: #16a34a; }
-        .btn-save-all { background: #059669; color: white; font-size: 16px; padding: 14px; border-radius: 10px; box-shadow: 0 3px 10px rgba(5, 150, 105, 0.3); }
+        .btn-save-all { background: #059669; color: white; font-size: 16px; padding: 14px; border-radius: 10px; width: 100%; box-shadow: 0 3px 10px rgba(5, 150, 105, 0.3); margin-bottom: 15px; }
         
         input, textarea, select { width: 100%; padding: 10px; margin-top: 6px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
         .topic-item { background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; }
@@ -41,7 +41,7 @@
         <button id="btn-admin" class="nav-btn" onclick="switchTab('admin')">⚙️ Засварлах</button>
     </div>
 
-    <!-- 1. НҮҮР ХЭСЭГ -->
+    <!-- 1. НҮҮР ХЭСЭГ (БҮЛГҮҮД ДҮҮРГЭЛТ) -->
     <div id="tab-learn">
         <div id="topic-list-view">
             <h3 style="margin-top:0;">Сургалтын бүлгүүд</h3>
@@ -70,33 +70,29 @@
     <!-- 2. ЗАСВАРЛАХ ХЭСЭГ (EDITOR) -->
     <div id="tab-admin" class="hidden">
         
-        <!-- БҮГДИЙГ ХАДГАЛАХ ТОВЧ (ДЭЭРЭЭ) -->
-        <button class="btn btn-save-all" onclick="manualSaveAll()" style="margin-bottom:20px;">💾 БҮХ ӨӨРЧЛӨЛТИЙГ ХАДГАЛАХ</button>
+        <button class="btn btn-save-all" onclick="manualSaveAll()">💾 БҮХ ӨӨРЧЛӨЛТИЙГ ХАДГАЛАХ</button>
 
-        <!-- БҮЛЭГ УДИРДАХ ХЭСЭГ -->
-        <h3>📁 1. Бүлэг удирдах (Нэмэх / Засах / Хасах)</h3>
+        <!-- БҮЛЭГ УДИРДАХ -->
+        <h3>📁 1. Бүлэг үүсгэх / засах</h3>
         <div class="card" style="background:#f8fafc;">
             <label>Шинэ бүлэг нэмэх:</label>
             <div style="display:flex; gap:8px;">
-                <input type="text" id="new-group-name" placeholder="жишээ нь: 2-р бүлэг: ХАБЭА" style="margin-bottom:0;">
+                <input type="text" id="new-group-name" placeholder="жишээ нь: 2-р бүлэг: Аюулгүй ажиллагаа" style="margin-bottom:0;">
                 <button class="btn btn-success btn-sm" style="white-space:nowrap;" onclick="createNewGroup()">+ Бүлэг нэмэх</button>
             </div>
             
             <hr style="border:none; border-top:1px solid #e2e8f0; margin:15px 0;">
-            
-            <label><b>Байгаа бүлгүүдийг засах/устгах:</b></label>
+            <label><b>Үүссэн бүлгүүд:</b></label>
             <div id="admin-topic-list" style="margin-top:8px;"></div>
         </div>
 
-        <!-- АГУУЛГА НЭМЭХ ХЭСЭГ -->
+        <!-- АГУУЛГА НЭМЭХ -->
         <h3>📖 2. Онол ба Сорил тест нэмэх</h3>
         <div class="card">
-            <label><b>Али бүлэгт нэмэх вэ?:</b></label>
-            <select id="select-topic">
-                <!-- Бүлгүүд орж ирнэ -->
-            </select>
+            <label><b>1. Али бүлэгт нэмэх вэ?:</b></label>
+            <select id="select-topic"></select>
 
-            <label><b>Юу нэмэхээ сонгох:</b></label>
+            <label><b>2. Юу нэмэхээ сонгох:</b></label>
             <select id="select-add-type" onchange="toggleFormType()">
                 <option value="THEORY">📖 Онол (Текст / Зураг) нэмэх</option>
                 <option value="QUIZ">🧠 Сорил тест нэмэх</option>
@@ -105,15 +101,15 @@
             <!-- ОНОЛ НЭМЭХ МАЯГТ -->
             <div id="form-theory-box">
                 <label>Онолын гарчиг (Заавал биш):</label>
-                <input type="text" id="add-theory-title" placeholder="жишээ нь: 1.1 Багажны аюулгүй байдал">
+                <input type="text" id="add-theory-title" placeholder="жишээ нь: 1.1 Техник ашиглалт">
 
                 <label>Зургийн линк (URL холбоос - Заавал биш):</label>
                 <input type="text" id="add-img-url" placeholder="https://example.com/image.jpg">
 
                 <label>Онолын агуулга (Текст):</label>
-                <textarea id="add-theory" rows="4" placeholder="Онолын текстээ энд бичнэ үү..."></textarea>
+                <textarea id="add-theory" rows="4" placeholder="Онолын мэдээллээ энд бичнэ үү..."></textarea>
                 
-                <button class="btn btn-success" onclick="addTheoryItem()">📖 Онол нэмэх</button>
+                <button class="btn btn-success" onclick="addTheoryItem()">📖 Энэ бүлэгт Онол нэмэх</button>
             </div>
 
             <!-- СОРИЛ НЭМЭХ МАЯГТ -->
@@ -133,17 +129,16 @@
                     <option value="2">Сонголт В</option>
                 </select>
 
-                <button class="btn btn-success" onclick="addQuizItem()">🧠 Сорил нэмэх</button>
+                <button class="btn btn-success" onclick="addQuizItem()">🧠 Энэ бүлэгт Сорил нэмэх</button>
             </div>
         </div>
 
-        <!-- БҮГДИЙГ ХАДГАЛАХ ТОВЧ (ДООРОО) -->
         <button class="btn btn-save-all" onclick="manualSaveAll()" style="margin-top:10px; margin-bottom:30px;">💾 БҮХ ӨӨРЧЛӨЛТИЙГ ХАДГАЛАХ</button>
     </div>
 </div>
 
 <script>
-    let topicsData = JSON.parse(localStorage.getItem('my_topics_v8')) || [
+    let topicsData = JSON.parse(localStorage.getItem('my_topics_v9')) || [
         {
             id: 1,
             title: "1-р бүлэг: Цахилгааны аюулгүй байдал",
@@ -165,17 +160,15 @@
     ];
 
     function saveData() {
-        localStorage.setItem('my_topics_v8', JSON.stringify(topicsData));
+        localStorage.setItem('my_topics_v9', JSON.stringify(topicsData));
     }
 
-    // БҮХ ӨӨРЧЛӨЛТИЙГ БАТАЛГААЖУУЛЖ ХАДГАЛАХ ТОВЧНИЙ ФУНКЦ
     function manualSaveAll() {
         saveData();
         refreshAllViews();
-        alert("🎉 Бүх бүлэг, онол, сорилын өөрчлөлтүүд амжилттай хадгалагдлаа!");
+        alert("🎉 Бүх өөрчлөлт хадгалагдлаа! Дэлгэц шинэчлэгдлээ.");
     }
 
-    // --- БҮЛЭГ УДИРДАХ ФУНКЦҮҮД ---
     function createNewGroup() {
         const input = document.getElementById('new-group-name');
         const name = input.value.trim();
@@ -194,7 +187,7 @@
         saveData();
         input.value = '';
         refreshAllViews();
-        alert("Шинэ бүлэг нэмэгдлээ. Төгсгөлд нь 'БҮХ ӨӨРЧЛӨЛТИЙГ ХАДГАЛАХ' товчийг дараарай!");
+        alert("Шинэ бүлэг үүслээ! Одоо доорх хэсгээс онол, сорилоо нэмнэ үү.");
     }
 
     function editTopicTitle(idx) {
@@ -208,7 +201,7 @@
     }
 
     function deleteTopic(idx) {
-        if(confirm(`"${topicsData[idx].title}" бүлгийг доторх бүх онол, сорилтой нь устгах уу?`)) {
+        if(confirm(`"${topicsData[idx].title}" бүлгийг устгах уу?`)) {
             topicsData.splice(idx, 1);
             saveData();
             refreshAllViews();
@@ -251,7 +244,6 @@
         });
     }
 
-    // --- ОНОЛ & СОРИЛ НЭМЭХ ---
     function toggleFormType() {
         const type = document.getElementById('select-add-type').value;
         if(type === 'THEORY') {
@@ -263,10 +255,11 @@
         }
     }
 
+    // ОНОЛ НЭМЭХ
     function addTheoryItem() {
         const selectVal = document.getElementById('select-topic').value;
-        if(selectVal === "") {
-            alert("Эхлээд дээр бүлэг үүсгэнэ үү!");
+        if(selectVal === "" || selectVal === null) {
+            alert("Эхлээд дээр бүлэг үүсгэнэ үү эсвэл бүлгээ сонгоно уу!");
             return;
         }
         const topicIdx = parseInt(selectVal);
@@ -280,21 +273,26 @@
             return;
         }
 
+        if(!topicsData[topicIdx].theories) {
+            topicsData[topicIdx].theories = [];
+        }
+
         topicsData[topicIdx].theories.push({ title, imageUrl, text });
 
         saveData();
         refreshAllViews();
 
-        alert("Онол нэмэгдлээ!");
+        alert("📖 Онол амжилттай нэмэгдлээ!");
         document.getElementById('add-theory-title').value = '';
         document.getElementById('add-img-url').value = '';
         document.getElementById('add-theory').value = '';
     }
 
+    // СОРИЛ НЭМЭХ
     function addQuizItem() {
         const selectVal = document.getElementById('select-topic').value;
-        if(selectVal === "") {
-            alert("Эхлээд дээр бүлэг үүсгэнэ үү!");
+        if(selectVal === "" || selectVal === null) {
+            alert("Эхлээд дээр бүлэг үүсгэнэ үү эсвэл бүлгээ сонгоно уу!");
             return;
         }
         const topicIdx = parseInt(selectVal);
@@ -308,6 +306,10 @@
             return;
         }
 
+        if(!topicsData[topicIdx].quizzes) {
+            topicsData[topicIdx].quizzes = [];
+        }
+
         topicsData[topicIdx].quizzes.push({
             question: qText,
             options: [optElements[0].value, optElements[1].value, optElements[2].value],
@@ -317,12 +319,12 @@
         saveData();
         refreshAllViews();
 
-        alert("Сорил тест нэмэгдлээ!");
+        alert("🧠 Сорил тест амжилттай нэмэгдлээ!");
         document.getElementById('add-q-text').value = '';
         optElements.forEach(o => o.value = '');
     }
 
-    // --- НҮҮР ПАЖ РЕНДЭР ---
+    // РЕНДЭР ФУНКЦҮҮД
     function renderTopicList() {
         const container = document.getElementById('topics-container');
         container.innerHTML = '';
@@ -350,7 +352,7 @@
         document.getElementById('topic-detail-view').classList.remove('hidden');
         document.getElementById('detail-topic-title').innerText = topic.title;
 
-        // Онолууд
+        // Онолууд харуулах
         const thContainer = document.getElementById('theory-items-container');
         thContainer.innerHTML = '';
         if(topic.theories && topic.theories.length > 0) {
@@ -364,10 +366,10 @@
                 `;
             });
         } else {
-            thContainer.innerHTML = '<p style="color:#666; text-align:center;">Одоогоор онол нэмэгдээгүй байна.</p>';
+            thContainer.innerHTML = '<p style="color:#666; text-align:center;">Энэ бүлэгт одоогоор онол нэмэгдээгүй байна.</p>';
         }
 
-        // Сорилууд
+        // Сорилууд харуулах
         const qContainer = document.getElementById('quiz-items-container');
         qContainer.innerHTML = '';
         if(topic.quizzes && topic.quizzes.length > 0) {
@@ -386,7 +388,7 @@
                 `;
             });
         } else {
-            qContainer.innerHTML = '<p style="color:#666; text-align:center;">Одоогоор сорил тест нэмэгдээгүй байна.</p>';
+            qContainer.innerHTML = '<p style="color:#666; text-align:center;">Энэ бүлэгт одоогоор сорил тест нэмэгдээгүй байна.</p>';
         }
 
         switchSubTab('theory');
@@ -434,6 +436,7 @@
             document.getElementById('btn-learn').classList.remove('active');
             document.getElementById('tab-admin').classList.remove('hidden');
             document.getElementById('tab-learn').classList.add('hidden');
+            refreshAllViews();
         }
     }
 
