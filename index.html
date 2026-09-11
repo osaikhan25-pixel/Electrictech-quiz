@@ -47,17 +47,6 @@
 
         .scan-box { background: #f0fdf4; border: 1px dashed #16a34a; padding: 10px; border-radius: 8px; margin-bottom: 12px; text-align: center; }
         #ocr-status { font-size: 12px; color: #2563eb; font-weight: bold; margin-top: 5px; }
-        
-        /* ХАЙЛТЫН СТАЙЛ */
-        .search-box { position: relative; margin-bottom: 15px; }
-        .search-input { width: 100%; padding: 12px 15px; border: 2px solid #2563eb; border-radius: 10px; font-size: 14px; outline: none; margin: 0; box-shadow: 0 2px 5px rgba(37,99,235,0.1); }
-        .search-sub-item { background: #ffffff; border: 1px dashed #2563eb; border-radius: 8px; padding: 8px 12px; margin-top: 6px; font-size: 13px; color: #1e293b; cursor: pointer; transition: background 0.2s; }
-        .search-sub-item:hover { background: #eff6ff; }
-        
-        /* ТҮЛХҮҮР ҮГИЙГ НОГООНООР ТЭМДЭГЛЭХ СТАЙЛ */
-        .green-highlight { background-color: #dcfce7; color: #15803d; font-weight: bold; padding: 2px 4px; border-radius: 4px; border: 1px solid #86efac; }
-        
-        .quiz-highlight { border: 2.5px solid #16a34a !important; box-shadow: 0 0 10px rgba(22, 163, 74, 0.4); }
     </style>
 </head>
 <body>
@@ -72,12 +61,6 @@
     <div id="tab-learn">
         <div id="topic-list-view">
             <h3 style="margin-top:0;">Сургалтын бүлгүүд</h3>
-            
-            <!-- ТҮЛХҮҮР ҮГЭЭР ХАЙХ ХЭСЭГ -->
-            <div class="search-box">
-                <input type="text" id="search-input" class="search-input" placeholder="🔍 Түлхүүр үгээр хайх (онол, асуулт, бүлэг)..." oninput="renderTopicList()">
-            </div>
-
             <div id="topics-container"></div>
         </div>
 
@@ -138,21 +121,21 @@
 
                 <!-- ЗУРГААС ТЕКСТ УНШИХ/СКАЙНДАХ ХЭСЭГ -->
                 <div class="scan-box">
-                    <label style="font-weight:bold; color:#15803d; font-size:13px;">📷 Номноос Текст Сканнердах (Зөвхөн текст уншина):</label>
+                    <label style="font-weight:bold; color:#15803d; font-size:13px;">📷 Зурагнаас текст сканнердах / Уншуулах:</label>
                     <div style="display:flex; gap:8px; margin-top:6px;">
                         <label class="btn btn-scan" style="flex:1; margin:0; cursor:pointer;">
                             📷 Камераар зураг авах
                             <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="processImageOCR(this)">
                         </label>
                         <label class="btn btn-scan" style="flex:1; margin:0; cursor:pointer;">
-                            🖼️ Галерейгаас уншуулах
+                            🖼️ Галерейгаас оруулж уншуулах
                             <input type="file" accept="image/*" style="display:none;" onchange="processImageOCR(this)">
                         </label>
                     </div>
                     <div id="ocr-status"></div>
                 </div>
 
-                <label>Үндсэн зургийн линк (URL / Заавал биш):</label>
+                <label>Зургийн линк (URL эсвэл Сканнердсан зураг):</label>
                 <input type="text" id="add-img-url" placeholder="https://example.com/image.jpg">
 
                 <label>Онолын агуулга (Текст):</label>
@@ -222,45 +205,76 @@
         alert("🎉 Бүх өөрчлөлт хадгалагдлаа!");
     }
 
-    // ТУСГАЙ ҮГИЙГ НОГООНООР НОГООН ХҮРЭЭТЭЙ ТЭМДЭГЛЭХ ФУНКЦ
-    function highlightText(text, query) {
-        if (!text) return "";
-        if (!query || query.trim() === "") return text;
-        
-        const reg = new RegExp(`(${query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
-        return text.replace(reg, '<span class="green-highlight">$1</span>');
-    }
-
+    // --- ЗАСВАРЛАСАН OCR ЗУРАГ БОЛОВСРУУЛАХ ФУНКЦ ---
     async function processImageOCR(input) {
         if (!input.files || !input.files[0]) return;
         const file = input.files[0];
 
         const statusDiv = document.getElementById('ocr-status');
-        statusDiv.innerText = "⏳ Зургийг уншиж байна, түр хүлээнэ үү...";
+        statusDiv.innerText = "⏳ Зургийг уншихад бэлдэж байна...";
 
-        try {
-            const result = await Tesseract.recognize(file, 'mon+eng', {
-                logger: m => {
-                    if(m.status === 'recognizing text') {
-                        statusDiv.innerText = `⏳ Текст уншиж байна... ${Math.round(m.progress * 100)}%`;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const img = new Image();
+            img.onload = async function() {
+                // Canvas ашиглан зургийн тодролыг (Contrast) ихэсгэж уншихад хялбар болгох
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Зургийн хэмжээг тохируулах
+                let width = img.width;
+                let height = img.height;
+                const maxDim = 1500;
+                if (width > maxDim || height > maxDim) {
+                    if (width > height) {
+                        height = Math.round((height * maxDim) / width);
+                        width = maxDim;
+                    } else {
+                        width = Math.round((width * maxDim) / height);
+                        height = maxDim;
                     }
                 }
-            });
+                
+                canvas.width = width;
+                canvas.height = height;
 
-            const scannedText = result.data.text.trim();
-            const textarea = document.getElementById('add-theory');
-            
-            if(textarea.value.trim() !== "") {
-                textarea.value += "\n\n" + scannedText;
-            } else {
-                textarea.value = scannedText;
-            }
+                // Тодрол болон хурц байдлыг ихэсгэх
+                ctx.filter = 'contrast(180%) grayscale(100%)';
+                ctx.drawImage(img, 0, 0, width, height);
 
-            statusDiv.innerText = "✅ Текст амжилттай уншиж орууллаа!";
-        } catch (err) {
-            console.error(err);
-            statusDiv.innerText = "❌ Текст уншихад алдаа гарлаа. Та дахин туршина уу.";
-        }
+                const processedDataUrl = canvas.toDataURL('image/jpeg');
+                document.getElementById('add-img-url').value = processedDataUrl;
+
+                statusDiv.innerText = "⏳ Монгол текстаар уншиж байна...";
+
+                try {
+                    // Tesseract-д Монгол ('mon') болон Англи ('eng') хэлийг тохируулах
+                    const result = await Tesseract.recognize(processedDataUrl, 'mon+eng', {
+                        logger: m => {
+                            if(m.status === 'recognizing text') {
+                                statusDiv.innerText = `⏳ Текст уншиж байна... ${Math.round(m.progress * 100)}%`;
+                            }
+                        }
+                    });
+
+                    const scannedText = result.data.text.trim();
+                    const textarea = document.getElementById('add-theory');
+                    
+                    if(textarea.value.trim() !== "") {
+                        textarea.value += "\n\n" + scannedText;
+                    } else {
+                        textarea.value = scannedText;
+                    }
+
+                    statusDiv.innerText = "✅ Текст амжилттай уншиж орууллаа!";
+                } catch (err) {
+                    console.error(err);
+                    statusDiv.innerText = "❌ Текст уншихад алдаа гарлаа. Зургийг илүү тод аваад дахин туршина уу.";
+                }
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
     }
 
     function createNewGroup() {
@@ -530,13 +544,8 @@
         optElements.forEach(o => o.value = '');
     }
 
-    // ТҮЛХҮҮР ҮГИЙГ НОГООНООР ТЭМДЭГЛЭДЭГ ХАЙЛТЫН РЕНДЕР ФУНКЦ
     function renderTopicList() {
         const container = document.getElementById('topics-container');
-        const searchInput = document.getElementById('search-input');
-        const query = searchInput ? searchInput.value.trim() : '';
-        const queryLower = query.toLowerCase();
-        
         container.innerHTML = '';
 
         if(topicsData.length === 0) {
@@ -544,126 +553,35 @@
             return;
         }
 
-        let matchCount = 0;
-
         topicsData.forEach((t, idx) => {
-            const matchedTheories = [];
-            const matchedQuizzes = [];
-
-            if(queryLower !== "") {
-                if(t.theories) {
-                    t.theories.forEach((th, thIdx) => {
-                        const titleMatch = th.title && th.title.toLowerCase().includes(queryLower);
-                        const textMatch = th.text && th.text.toLowerCase().includes(queryLower);
-                        if(titleMatch || textMatch) {
-                            matchedTheories.push({ thIdx, th });
-                        }
-                    });
-                }
-                if(t.quizzes) {
-                    t.quizzes.forEach((q, qIdx) => {
-                        if(q.question.toLowerCase().includes(queryLower)) {
-                            matchedQuizzes.push({ qIdx, q });
-                        }
-                    });
-                }
-            }
-
-            const isTitleMatch = (queryLower !== "") && t.title.toLowerCase().includes(queryLower);
-            const isMatch = (queryLower === "") || isTitleMatch || matchedTheories.length > 0 || matchedQuizzes.length > 0;
-
-            if(isMatch) {
-                matchCount++;
-                const thCount = t.theories ? t.theories.length : 0;
-                const qCount = t.quizzes ? t.quizzes.length : 0;
-                
-                let resultsHtml = '';
-                
-                if(queryLower !== "") {
-                    if(matchedTheories.length > 0) {
-                        resultsHtml += `<div style="margin-top:8px; font-weight:bold; font-size:12px; color:#15803d;">📖 Олдсон онолууд:</div>`;
-                        matchedTheories.forEach(item => {
-                            const rawName = item.th.title || (item.th.text ? item.th.text.substring(0, 35) + "..." : "Онол " + (item.thIdx+1));
-                            const highlightedName = highlightText(rawName, query);
-                            resultsHtml += `
-                                <div class="search-sub-item" onclick="event.stopPropagation(); openTopicTarget(${idx}, 'theory', ${item.thIdx});">
-                                    📖 <b>${highlightedName}</b>
-                                </div>
-                            `;
-                        });
-                    }
-                    if(matchedQuizzes.length > 0) {
-                        resultsHtml += `<div style="margin-top:8px; font-weight:bold; font-size:12px; color:#15803d;">🧠 Олдсон сорилууд:</div>`;
-                        matchedQuizzes.forEach(item => {
-                            const highlightedQ = highlightText(item.q.question, query);
-                            resultsHtml += `
-                                <div class="search-sub-item" onclick="event.stopPropagation(); openTopicTarget(${idx}, 'quiz', ${item.qIdx});">
-                                    🧠 <b>${highlightedQ}</b>
-                                </div>
-                            `;
-                        });
-                    }
-                }
-
-                const displayTitle = highlightText(t.title, query);
-
-                container.innerHTML += `
-                    <div class="topic-item" onclick="openTopic(${idx})">
-                        <h3 style="margin:0 0 5px 0; color:#1e293b;">${displayTitle}</h3>
-                        <span style="font-size:12px; color:#2563eb; font-weight:bold;">📖 ${thCount} онол | 🧠 ${qCount} сорил →</span>
-                        ${resultsHtml}
-                    </div>
-                `;
-            }
+            const thCount = t.theories ? t.theories.length : 0;
+            const qCount = t.quizzes ? t.quizzes.length : 0;
+            container.innerHTML += `
+                <div class="topic-item" onclick="openTopic(${idx})">
+                    <h3 style="margin:0 0 5px 0; color:#1e293b;">${t.title}</h3>
+                    <span style="font-size:12px; color:#2563eb; font-weight:bold;">📖 ${thCount} онол | 🧠 ${qCount} сорил →</span>
+                </div>
+            `;
         });
-
-        if(matchCount === 0 && queryLower !== "") {
-            container.innerHTML = '<p style="color:#666; text-align:center; padding: 20px 0;">🔍 Илэрц олдсонгүй.</p>';
-        }
-    }
-
-    function openTopicTarget(tIdx, tabType, itemIdx) {
-        openTopic(tIdx);
-        switchSubTab(tabType);
-
-        setTimeout(() => {
-            if(tabType === 'theory') {
-                const target = document.getElementById(`theory-card-${itemIdx}`);
-                if(target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            } else if(tabType === 'quiz') {
-                const target = document.getElementById(`quiz-card-${itemIdx}`);
-                if(target) {
-                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    target.classList.add('quiz-highlight');
-                    setTimeout(() => target.classList.remove('quiz-highlight'), 2000);
-                }
-            }
-        }, 100);
     }
 
     function openTopic(idx) {
         const topic = topicsData[idx];
-        const searchInput = document.getElementById('search-input');
-        const query = searchInput ? searchInput.value.trim() : '';
-
         document.getElementById('topic-list-view').classList.add('hidden');
         document.getElementById('topic-detail-view').classList.remove('hidden');
         document.getElementById('detail-topic-title').innerText = topic.title;
 
-        // Онолууд харуулах болон хайсан үгийг ногооноор тодруулах
+        // Онолууд харуулах
         const thContainer = document.getElementById('theory-items-container');
         thContainer.innerHTML = '';
         if(topic.theories && topic.theories.length > 0) {
-            topic.theories.forEach((th, thIdx) => {
-                const titleText = highlightText(th.title, query);
-                const bodyText = highlightText(th.text, query);
-
-                const titleHtml = th.title ? `<h3 style="margin-top:0;">${titleText}</h3>` : '';
+            topic.theories.forEach(th => {
+                const titleHtml = th.title ? `<h3 style="margin-top:0;">${th.title}</h3>` : '';
                 const imgHtml = (th.imageUrl && th.imageUrl !== '') ? `<img class="lesson-img" src="${th.imageUrl}" alt="Онолын зураг">` : '';
-                const textHtml = th.text ? `<p style="line-height:1.6; color:#374151; white-space: pre-line;">${bodyText}</p>` : '';
+                const textHtml = th.text ? `<p style="line-height:1.6; color:#374151; white-space: pre-line;">${th.text}</p>` : '';
 
                 thContainer.innerHTML += `
-                    <div class="card" id="theory-card-${thIdx}">
+                    <div class="card">
                         ${titleHtml}
                         ${imgHtml}
                         ${textHtml}
@@ -674,7 +592,7 @@
             thContainer.innerHTML = '<p style="color:#666; text-align:center;">Энэ бүлэгт одоогоор онол нэмэгдээгүй байна.</p>';
         }
 
-        // Сорилууд харуулах болон хайсан үгийг ногооноор тодруулах
+        // Сорилууд харуулах
         const qContainer = document.getElementById('quiz-items-container');
         qContainer.innerHTML = '';
         if(topic.quizzes && topic.quizzes.length > 0) {
@@ -686,11 +604,9 @@
                     }
                 });
 
-                const qText = highlightText(q.question, query);
-
                 qContainer.innerHTML += `
                     <div class="card" id="quiz-card-${qIdx}">
-                        <h4 style="margin-top:0;">${qIdx + 1}. ${qText}</h4>
+                        <h4 style="margin-top:0;">${qIdx + 1}. ${q.question}</h4>
                         <div>${optsHtml}</div>
                         <p id="q-res-${qIdx}" style="font-weight:bold; margin-top:10px;"></p>
                     </div>
